@@ -1,6 +1,5 @@
-// if (process.env.NODE_ENV == "development") {
-    // require('dotenv').config();
-// }
+// Always load dotenv
+require('dotenv').config();
 
 const express = require('express');
 const app = express();
@@ -13,12 +12,11 @@ const passport = require('passport');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-  
-  
+
 const initAllModels = require('./initAllModels');
 initAllModels();
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 
 // ===== EJS SETUP =====
 app.set('view engine', 'ejs');
@@ -31,19 +29,23 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===== SESSION SETUP =====
+// Determine if we're in production or development
+const isProduction = process.env.NODE_ENV === 'production';
+console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+
 const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key-changeme-12345',
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: { 
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        // IMPORTANT: In Render, use 'auto' or conditionally set secure
-        secure: 'auto', // This will automatically set to true for HTTPS, false for HTTP
-        sameSite: 'lax', // Use 'lax' for better compatibility
-        // Don't set domain for Render, let it be automatic
+        // Secure cookies only in production (HTTPS)
+        secure: isProduction,
+        // Use 'none' for cross-site in production, 'lax' for local
+        sameSite: isProduction ? 'none' : 'lax',
     },
-    store: new session.MemoryStore() // Use memory store for both dev and prod for now
+    store: new session.MemoryStore()
 });
 
 app.use(sessionMiddleware);
@@ -63,8 +65,6 @@ app.use((req, res, next) => {
     next();
 });
 
-
-
 // API detection middleware
 app.use((req, res, next) => {
     req.isAPI = req.originalUrl.startsWith("/api");
@@ -74,121 +74,139 @@ app.use((req, res, next) => {
 // ===== SERVER & SOCKET.IO SETUP =====
 const server = http.createServer(app);
 
-// Get allowed origins from environment or use defaults
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-    ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
-    : ['http://localhost:5000', 'http://127.0.0.1:3000','https://unsaid-ijvh.onrender.com', process.env.SOCKET_IO_ORIGIN];
-
-const io = socketIo(server, {
-    cors: {
+// Configure CORS for Socket.IO
+let corsOptions;
+if (isProduction) {
+    // Production settings
+    const allowedOrigins = process.env.ALLOWED_ORIGINS ? 
+        process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) : 
+        [];
+    
+    console.log('✅ Production mode - Allowed origins:', allowedOrigins);
+    
+    corsOptions = {
         origin: function(origin, callback) {
             // Allow requests with no origin (like mobile apps or curl requests)
-            if (!origin) return callback(null, true);
+            if (!origin) {
+                console.log('⚠️ Request with no origin, allowing...');
+                return callback(null, true);
+            }
             
             // Check if origin is in allowed list
-            if (allowedOrigins.indexOf(origin) === -1) {
-                const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-                console.error('CORS Error:', msg);
-                return callback(new Error(msg), false);
+            if (allowedOrigins.length === 0) {
+                console.log('⚠️ No allowed origins configured, allowing all');
+                return callback(null, true);
             }
-            return callback(null, true);
+            
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            
+            console.error(`❌ CORS blocked origin: ${origin}`);
+            return callback(new Error('Not allowed by CORS'), false);
         },
         methods: ['GET', 'POST'],
         credentials: true
-    },
-    transports: ['websocket', 'polling'],
-    allowEIO3: true // For compatibility with older clients
-});
+    };
+} else {
+    // Development settings
+    console.log('🔧 Development mode - Allowing all origins');
+    corsOptions = {
+        origin: true, // Reflect the request origin
+        credentials: true,
+        methods: ['GET', 'POST']
+    };
+}
 
+const io = socketIo(server, {
+    cors: corsOptions,
+    transports: ['websocket', 'polling']
+});
 
 // ===== SOCKET.IO AUTHENTICATION =====
 io.use((socket, next) => {
-    console.log('Socket handshake:', {
-        headers: socket.handshake.headers,
-        auth: socket.handshake.auth,
-        cookies: socket.handshake.headers.cookie
-    });
+    console.log('🔍 Socket connection attempt from:', socket.handshake.headers.origin);
     
+    // Check if we have user data passed in auth (from frontend)
+    const authData = socket.handshake.auth;
+    if (authData && authData.userId && authData.userId !== '') {
+        console.log(`✅ Using auth data: ${authData.username} (${authData.userId})`);
+        socket.userId = authData.userId;
+        socket.username = authData.username || 'User';
+        socket.role = authData.role || 'user';
+        return next();
+    }
     
-    // For development/testing, try to get user from auth
-    if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode - checking auth');
-        
-        // Check if user data was passed in auth
-        if (socket.handshake.auth.userId && socket.handshake.auth.userId !== '') {
-            socket.userId = socket.handshake.auth.userId;
-            socket.username = socket.handshake.auth.username || 'User';
-            socket.role = socket.handshake.auth.role || 'user';
-            console.log(`✅ Socket authenticated via auth: ${socket.username} (${socket.userId})`);
+    // Try to get session from cookies
+    const cookies = socket.handshake.headers.cookie;
+    if (!cookies) {
+        console.log('❌ No cookies found - anonymous connection');
+        socket.userId = 'anonymous';
+        socket.username = 'Anonymous';
+        socket.role = 'guest';
+        return next();
+    }
+    
+    const sessionCookie = cookies.match(/connect\.sid=([^;]+)/)?.[1];
+    if (!sessionCookie) {
+        console.log('❌ No session cookie found');
+        socket.userId = 'anonymous';
+        socket.username = 'Anonymous';
+        socket.role = 'guest';
+        return next();
+    }
+    
+    console.log('🍪 Found session cookie, attempting authentication...');
+    
+    // Use session middleware to restore session
+    sessionMiddleware(socket.request, {}, (err) => {
+        if (err) {
+            console.error('Session middleware error:', err);
+            socket.userId = 'anonymous';
+            socket.username = 'Anonymous';
+            socket.role = 'guest';
             return next();
         }
         
-        // Try to get session from cookies
-        const sessionCookie = socket.handshake.headers.cookie?.match(/connect\.sid=([^;]+)/)?.[1];
-        if (sessionCookie) {
-            console.log('🍪 Found session cookie');
+        // Check if user is authenticated in session
+        if (socket.request.session && socket.request.session.passport) {
+            const userId = socket.request.session.passport.user;
+            console.log('✅ Found user ID in session:', userId);
             
-            // Parse the session manually since we can't use session middleware directly
-            sessionMiddleware(socket.request, {}, (err) => {
-                if (err) {
-                    console.error('Session middleware error:', err);
-                    socket.userId = 'anonymous';
-                    socket.username = 'Anonymous';
-                    socket.role = 'guest';
-                    return next();
-                }
-                
-                if (socket.request.session && socket.request.session.passport) {
-                    const userId = socket.request.session.passport.user;
-                    console.log('🔍 Found user ID in session:', userId);
-                    
-                    const User = require('./models/User');
-                    User.getById(userId)
-                        .then(user => {
-                            if (user) {
-                                socket.userId = user.id;
-                                socket.username = user.username || 'Anonymous';
-                                socket.role = user.role || 'user';
-                                socket.user = user;
-                                console.log(`✅ Socket authenticated: ${socket.username} (${user.id})`);
-                            } else {
-                                socket.userId = 'anonymous';
-                                socket.username = 'Anonymous';
-                                socket.role = 'guest';
-                                console.log('❌ User not found in database');
-                            }
-                            next();
-                        })
-                        .catch(err => {
-                            console.error('User fetch error:', err);
-                            socket.userId = 'anonymous';
-                            socket.username = 'Anonymous';
-                            socket.role = 'guest';
-                            next();
-                        });
-                } else {
-                    console.log('❌ No passport in session');
+            const User = require('./models/User');
+            User.getById(userId)
+                .then(user => {
+                    if (user) {
+                        socket.userId = user.id;
+                        socket.username = user.username || 'Anonymous';
+                        socket.role = user.role || 'user';
+                        socket.user = user;
+                        console.log(`✅ Socket authenticated: ${socket.username} (${user.id})`);
+                    } else {
+                        console.log('❌ User not found in database');
+                        socket.userId = 'anonymous';
+                        socket.username = 'Anonymous';
+                        socket.role = 'guest';
+                    }
+                    next();
+                })
+                .catch(err => {
+                    console.error('User fetch error:', err);
                     socket.userId = 'anonymous';
                     socket.username = 'Anonymous';
                     socket.role = 'guest';
                     next();
-                }
-            });
+                });
         } else {
-            console.log('❌ No session cookie found');
+            console.log('❌ No passport found in session');
             socket.userId = 'anonymous';
             socket.username = 'Anonymous';
             socket.role = 'guest';
             next();
         }
-    } else {
-        // Production mode - simpler approach
-        socket.userId = 'anonymous';
-        socket.username = 'Anonymous';
-        socket.role = 'guest';
-        next();
-    }
+    });
 });
+
 // ===== SOCKET.IO EVENT HANDLERS =====
 io.on('connection', (socket) => {
     console.log(`🔗 New connection: ${socket.username} (${socket.userId}, ${socket.role})`);
@@ -407,14 +425,68 @@ io.on('connection', (socket) => {
 });
 
 // ===== ROUTES =====
-// Add this before your routes
+// Health check endpoint (required for Render)
 app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'OK', 
+        environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
 });
+
+// Debug endpoint
+app.get('/debug', (req, res) => {
+    res.json({
+        environment: process.env.NODE_ENV,
+        sessionId: req.sessionID,
+        userId: req.user?.id,
+        username: req.user?.username,
+        isAuthenticated: req.isAuthenticated(),
+        cookies: req.headers.cookie,
+        nodeEnv: process.env.NODE_ENV
+    });
+});
+
+// Test Socket.IO endpoint
+app.get('/test-socket', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Socket.IO Test</title>
+            <script src="/socket.io/socket.io.js"></script>
+        </head>
+        <body>
+            <h1>Socket.IO Test Page</h1>
+            <div id="status">Connecting...</div>
+            <script>
+                const socket = io({
+                    withCredentials: true,
+                    transports: ['websocket', 'polling']
+                });
+                
+                socket.on('connect', () => {
+                    document.getElementById('status').innerHTML = 'Connected!';
+                    console.log('Socket connected:', socket.id);
+                });
+                
+                socket.on('connected', (data) => {
+                    console.log('Connected event:', data);
+                    document.getElementById('status').innerHTML = 
+                        'Connected as: ' + data.username + ' (' + data.userId + ')';
+                });
+                
+                socket.on('error', (error) => {
+                    console.error('Socket error:', error);
+                    document.getElementById('status').innerHTML = 'Error: ' + error.message;
+                });
+            </script>
+        </body>
+        </html>
+    `);
+});
+
 const web = require('./router/web');
 const api = require('./router/api');
 
@@ -478,6 +550,9 @@ server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔌 Socket.IO ready`);
     console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📡 Test Socket.IO: http://localhost:${PORT}/test-socket`);
+    console.log(`❤️ Health check: http://localhost:${PORT}/health`);
+    console.log(`🐛 Debug info: http://localhost:${PORT}/debug`);
 });
 
 // Graceful shutdown
