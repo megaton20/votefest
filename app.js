@@ -1,5 +1,5 @@
 // if (process.env.NODE_ENV == "development") {
-    // require('dotenv').config();
+    require('dotenv').config();
 // }
 
 const express = require('express');
@@ -38,17 +38,12 @@ const sessionMiddleware = session({
     cookie: { 
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production' ? true : false, // Only HTTPS in production
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site in production
-        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+        // IMPORTANT: In Render, use 'auto' or conditionally set secure
+        secure: 'auto', // This will automatically set to true for HTTPS, false for HTTP
+        sameSite: 'lax', // Use 'lax' for better compatibility
+        // Don't set domain for Render, let it be automatic
     },
-    store: process.env.NODE_ENV === 'production' ? 
-        (() => {
-        
-            console.log('⚠️ Using memory session store - not suitable for production scaling');
-            return new session.MemoryStore();
-        })() : 
-        new session.MemoryStore()
+    store: new session.MemoryStore() // Use memory store for both dev and prod for now
 });
 
 app.use(sessionMiddleware);
@@ -107,74 +102,92 @@ const io = socketIo(server, {
 
 
 // ===== SOCKET.IO AUTHENTICATION =====
-// ===== SOCKET.IO AUTHENTICATION =====
 io.use((socket, next) => {
-    // For development, allow all
+    console.log('Socket handshake:', {
+        headers: socket.handshake.headers,
+        auth: socket.handshake.auth,
+        cookies: socket.handshake.headers.cookie
+    });
+    
+    
+    // For development/testing, try to get user from auth
     if (process.env.NODE_ENV === 'development') {
-        socket.userId = socket.handshake.auth.userId || 'anonymous';
-        socket.username = socket.handshake.auth.username || 'Anonymous';
-        socket.role = socket.handshake.auth.role || 'guest';
-        return next();
-    }
-    
-    // For production, try to authenticate
-    const sessionId = socket.handshake.auth.sessionId || 
-                     socket.handshake.headers.cookie?.match(/connect\.sid=([^;]+)/)?.[1];
-    
-    if (!sessionId) {
-        // Allow anonymous for chat
-        socket.userId = 'anonymous';
-        socket.username = 'Anonymous';
-        socket.role = 'guest';
-        return next();
-    }
-    
-    // Get session from memory store
-    sessionMiddleware(socket.request, {}, (err) => {
-        if (err) {
-            console.error('Session middleware error:', err);
-            socket.userId = 'anonymous';
-            socket.username = 'Anonymous';
-            socket.role = 'guest';
+        console.log('🔧 Development mode - checking auth');
+        
+        // Check if user data was passed in auth
+        if (socket.handshake.auth.userId && socket.handshake.auth.userId !== '') {
+            socket.userId = socket.handshake.auth.userId;
+            socket.username = socket.handshake.auth.username || 'User';
+            socket.role = socket.handshake.auth.role || 'user';
+            console.log(`✅ Socket authenticated via auth: ${socket.username} (${socket.userId})`);
             return next();
         }
         
-        // Check if user is authenticated
-        if (socket.request.session && socket.request.session.passport) {
-            const userId = socket.request.session.passport.user;
+        // Try to get session from cookies
+        const sessionCookie = socket.handshake.headers.cookie?.match(/connect\.sid=([^;]+)/)?.[1];
+        if (sessionCookie) {
+            console.log('🍪 Found session cookie');
             
-            const User = require('./models/User');
-
-            console.log(User.getById(userId));
-            
-            User.getById(userId)
-                .then(user => {
-                    if (user) {
-                        socket.userId = user.id;
-                        socket.username = user.username || 'Anonymous';
-                        socket.role = user.role || 'user';
-                        socket.user = user;
-                    } else {
-                        socket.userId = 'anonymous';
-                        socket.username = 'Anonymous';
-                        socket.role = 'guest';
-                    }
-                    next();
-                })
-                .catch(err => {
-                    console.error('User fetch error:', err);
+            // Parse the session manually since we can't use session middleware directly
+            sessionMiddleware(socket.request, {}, (err) => {
+                if (err) {
+                    console.error('Session middleware error:', err);
+                    socket.userId = 'anonymous';
+                    socket.username = 'Anonymous';
+                    socket.role = 'guest';
+                    return next();
+                }
+                
+                if (socket.request.session && socket.request.session.passport) {
+                    const userId = socket.request.session.passport.user;
+                    console.log('🔍 Found user ID in session:', userId);
+                    
+                    const User = require('./models/User');
+                    User.getById(userId)
+                        .then(user => {
+                            if (user) {
+                                socket.userId = user.id;
+                                socket.username = user.username || 'Anonymous';
+                                socket.role = user.role || 'user';
+                                socket.user = user;
+                                console.log(`✅ Socket authenticated: ${socket.username} (${user.id})`);
+                            } else {
+                                socket.userId = 'anonymous';
+                                socket.username = 'Anonymous';
+                                socket.role = 'guest';
+                                console.log('❌ User not found in database');
+                            }
+                            next();
+                        })
+                        .catch(err => {
+                            console.error('User fetch error:', err);
+                            socket.userId = 'anonymous';
+                            socket.username = 'Anonymous';
+                            socket.role = 'guest';
+                            next();
+                        });
+                } else {
+                    console.log('❌ No passport in session');
                     socket.userId = 'anonymous';
                     socket.username = 'Anonymous';
                     socket.role = 'guest';
                     next();
-                });
+                }
+            });
         } else {
+            console.log('❌ No session cookie found');
             socket.userId = 'anonymous';
             socket.username = 'Anonymous';
             socket.role = 'guest';
             next();
         }
-    });
+    } else {
+        // Production mode - simpler approach
+        socket.userId = 'anonymous';
+        socket.username = 'Anonymous';
+        socket.role = 'guest';
+        next();
+    }
 });
 // ===== SOCKET.IO EVENT HANDLERS =====
 io.on('connection', (socket) => {
