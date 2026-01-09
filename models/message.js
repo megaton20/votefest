@@ -1,6 +1,7 @@
 const createTableIfNotExists = require('../utils/createTableIfNotExists');
 const pool = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
+const User = require('./User');
 
 class Message {
  static async init() {
@@ -359,7 +360,7 @@ static async checkRateLimit(userId) {
 static async createSecureAdminMessage(adminUserId, targetUserId, content) {
   try {
     // Verify admin has permission
-    const User = require('./user');
+    
     const isAdmin = await User.isAdmin(adminUserId);
     
     if (!isAdmin) {

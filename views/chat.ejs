@@ -675,8 +675,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let typingTimeout;
     let isTyping = false;
     let lastTypingTime = 0;
-    const TYPING_DEBOUNCE = 300; // ms
-    const TYPING_STOP_DELAY = 1000; // ms
+    const TYPING_DEBOUNCE = 500; // ms
+    const TYPING_STOP_DELAY = 2000; // ms
 
     // Polling variables
     let pollingInterval;
@@ -692,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Socket.IO event handlers
     socket.on('connect', () => {
-        console.log('✅ Connected to chat server');
+        console.log('Connected to chat server');
         // Set user as online
         socket.emit('set-online-status', 'online');
         
@@ -708,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.on('connect_error', (error) => {
-        console.error('❌ Connection error:', error);
+        console.error('Connection error:', error);
         adminStatusElement.textContent = '● Connection failed';
         adminStatusElement.className = 'status-indicator offline';
         
@@ -717,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.on('disconnect', (reason) => {
-        console.log('🔌 Disconnected:', reason);
+        console.log('Disconnected:', reason);
         adminStatusElement.textContent = '● Reconnecting...';
         adminStatusElement.className = 'status-indicator connecting';
     });
@@ -758,7 +758,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle new message
     function handleNewMessage(message) {
-        console.log('📩 New message received:', message);
         
         // Remove "no messages" placeholder if it exists
         const noMessages = document.querySelector('.no-messages');
@@ -968,16 +967,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Play notification sound
-    function playNotificationSound() {
-        try {
-            const audio = new Audio('/notification.mp3');
-            audio.volume = 0.3;
-            audio.play().catch(e => console.log('Audio play failed:', e));
-        } catch (e) {
-            console.log('Notification sound error:', e);
+        // Audio control system
+        let audioEnabled = false;
+
+        // Function to enable audio on user interaction
+        function enableAudio() {
+            if (!audioEnabled) {
+                // Try to play a silent sound to unlock audio
+                const silentAudio = new Audio();
+                silentAudio.volume = 0;
+                silentAudio.play().then(() => {
+                    audioEnabled = true;
+                    console.log('🔊 Audio enabled');
+                    // Store preference in localStorage if needed
+                    localStorage.setItem('audioEnabled', 'true');
+                }).catch(e => {
+                    console.log('🔇 Audio still blocked by browser');
+                });
+            }
         }
-    }
+
+        // Enable audio on any user interaction
+        document.addEventListener('click', enableAudio, { once: true });
+        document.addEventListener('keydown', enableAudio, { once: true });
+        document.addEventListener('touchstart', enableAudio, { once: true });
+
+        // Check if audio was previously enabled
+        if (localStorage.getItem('audioEnabled') === 'true') {
+            // Try to enable audio on page load
+            setTimeout(enableAudio, 1000);
+        }
+
+        // Play notification sound
+        function playNotificationSound() {
+            if (!audioEnabled) {
+                return;
+            }
+            
+            try {
+                const audio = new Audio('./audio/notification.wav');
+                audio.volume = 0.3;
+                audio.play().catch(e => {
+                    console.log('Audio play failed:', e);
+                    // If fails, disable audio for this session
+                    audioEnabled = false;
+                });
+            } catch (e) {
+                console.log('Notification sound error:', e);
+            }
+        }
 
     // Show notification
     function showNotification(message, type = 'info') {
@@ -1037,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         targetUserId: 'admin', 
                         isTyping: true 
                     });
-                    console.log('⌨️ Typing started...');
+                    // console.log('⌨️ Typing started...');
                 }
             }
             
@@ -1050,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         targetUserId: 'admin', 
                         isTyping: false 
                     });
-                    console.log('⌨️ Typing stopped');
+                    // console.log('⌨️ Typing stopped');
                 }
             }, TYPING_STOP_DELAY);
         }
@@ -1128,7 +1166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         sendButton.disabled = true;
         
         try {
-            console.log('📤 Sending message:', content);
             
             // Send via Socket.IO
             socket.emit('send-message', {
@@ -1149,7 +1186,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Try HTTP fallback
             try {
-                console.log('🔄 Trying HTTP fallback...');
                 const response = await fetch('/chat/send', {
                     method: 'POST',
                     headers: {
@@ -1238,8 +1274,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(scrollToBottom, 100);
     
     // Test Socket.IO connection
-    console.log('🚀 Chat interface initialized');
-    console.log('👤 Current user ID:', currentUserId);
-    console.log('👤 Current username:', currentUsername);
+    // console.log('🚀 Chat interface initialized');
+    // console.log('👤 Current user ID:', currentUserId);
+    // console.log('👤 Current username:', currentUsername);
 });
 </script>

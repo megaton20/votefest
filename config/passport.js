@@ -1,15 +1,10 @@
 const passport = require('passport');
 // const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const db = require("./db");
-const { promisify } = require('util');
-const query = promisify(db.query).bind(db);
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
-const {v4:uuidv4} = require('uuid')
 require('dotenv').config();
 const User = require("../models/User");
 
-let globalReferralCode;
 
 // Passport session setup
 passport.serializeUser((user, done) => {

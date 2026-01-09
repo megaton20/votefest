@@ -44,7 +44,6 @@ class User {
   }
 
   
-// Add these methods to your existing User class:
 
 static async isAdmin(userId) {
   try {
