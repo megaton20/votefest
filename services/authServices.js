@@ -4,7 +4,7 @@ const passport = require('../config/passport');
 const pool = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 const sendEmail = require('../utils/mailer');
-const User = require("../models/User");
+const User = require('../models/User');
 const { generateResetToken, verifyResetToken } = require("../config/jsonWebToken");
 const { verificationEmailSentTemplate, welcomeToAppTemplate, resetPasswordTemplate } = require("../utils/templates");
 
