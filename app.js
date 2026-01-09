@@ -10,7 +10,7 @@ const passport = require('passport');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-  const User = require('./models/User.js');
+  
 
   
 const initAllModels = require('./initAllModels');
@@ -103,7 +103,7 @@ io.use((socket, next) => {
                 const userId = socket.request.session.passport.user;
                 
                 // Get user from database
-              
+              const User = require('./models/User');
                 User.getById(userId)
                     .then(user => {
                         if (user) {
