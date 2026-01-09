@@ -1,4 +1,4 @@
-require('dotenv').config();
+
 const express = require('express');
 const app = express();
 const session = require('express-session');
@@ -11,7 +11,9 @@ const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
   
-
+if (process.env.NODE_ENV === "development") {
+    require('dotenv').config();
+}
   
 const initAllModels = require('./initAllModels');
 initAllModels();
