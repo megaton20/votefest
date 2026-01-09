@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 const csrf = require('csurf');
 const xss = require('xss-clean');
 const hpp = require('hpp');
-const User = require('../models/user');
+const User = require("../models/User");
 
 // Security headers
 const securityHeaders = helmet({
