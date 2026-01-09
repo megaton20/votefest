@@ -1,5 +1,5 @@
 const chatServices = require('../services/chatServices');
-const User = require('../models/User');
+const User = require("../models/User");
 
 // Regular user chat (sees conversation with admin)
 exports.chatArea = async (req, res) => {
