@@ -1,3 +1,6 @@
+// if (process.env.NODE_ENV == "development") {
+    require('dotenv').config();
+// }
 
 const express = require('express');
 const app = express();
@@ -11,14 +14,11 @@ const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
   
-if (process.env.NODE_ENV === "development") {
-    require('dotenv').config();
-}
   
 const initAllModels = require('./initAllModels');
 initAllModels();
 
-const PORT = env.PORT;
+const PORT = process.env.PORT;
 
 // ===== EJS SETUP =====
 app.set('view engine', 'ejs');
@@ -44,8 +44,7 @@ const sessionMiddleware = session({
     },
     store: process.env.NODE_ENV === 'production' ? 
         (() => {
-            // For production, you should use a proper session store
-            // Using memory store for now, but consider Redis for production
+        
             console.log('⚠️ Using memory session store - not suitable for production scaling');
             return new session.MemoryStore();
         })() : 

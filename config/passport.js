@@ -34,6 +34,8 @@ passport.deserializeUser(async (id, done) => {
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
   try {
 
+    console.log(email);
+    
     
     // Query the database for a user with the provided email
     const user = await User.findByEmail(email);
