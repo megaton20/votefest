@@ -10,7 +10,7 @@ const passport = require('passport');
 const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
-  const User = require('./models/user');
+  const User = require('./models/User.js');
 
   
 const initAllModels = require('./initAllModels');
