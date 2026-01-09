@@ -1,0 +1,24 @@
+ <!-- Header -->
+    <header class="container header">
+        
+        <a href="/" class="logo">
+            <img src="/img/logo.PNG" alt="">
+            
+        </a>
+        <button class="mobile-menu-btn">☰</button>
+        
+        <nav class="desktop-nav">
+            <a href="/" class="nav-link active">Home</a>
+            <a href="/auth/logout" class="nav-link">logout</a>
+            
+            <!-- In your topnav or sidenav partial -->
+                <% if (user && user.role === 'admin') { %>
+                <a href="/chat/admin" class="nav-link">
+                    <span class="nav-icon">📨</span>
+                    <span class="nav-text">Admin Inbox</span>
+                   
+                </a>
+                <% } %>
+                
+        </nav>
+    </header>

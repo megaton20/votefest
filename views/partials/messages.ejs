@@ -1,0 +1,40 @@
+
+<div id="message-container">
+    <% if(locals.errors && locals.errors.length > 0){ %>
+        <% locals.errors.forEach(function(error) { %>
+           <div class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+                <i class="fas fa-times-circle"></i> <%= error.msg %>  
+                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% }); %>
+    <% } %>
+    
+    <% if(success_msg && success_msg != ''){ %>
+        <div class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+            <i class="fas fa-check-circle"></i> <%= success_msg %> 
+         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+  
+    <% if(error_msg && error_msg != ''){ %>
+        <div class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+            <i class="fas fa-times-circle"></i> <%= error_msg %>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+  
+    <% if(error && error != ''){ %>
+        <div class="alert alert-warning alert-dismissible fade show py-2 small" role="alert">
+            <i class="fas fa-times-circle"></i> <%= error %> 
+             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+  
+    <% if(warning_msg && warning_msg != ''){ %>
+       <div class="alert alert-warning alert-dismissible fade show py-2 small" role="alert">
+            <i class="fas fa-exclamation-circle"></i> <%= warning_msg %>
+             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+  </div>
+  

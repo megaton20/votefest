@@ -1,0 +1,1416 @@
+
+<style>
+/* ===== CHAT HEADER STYLES ===== */
+.chat-header-user {
+    background: rgba(17, 17, 17, 0.3);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 20px 0;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.user-info-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+}
+
+/* Back Button */
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-light);
+    text-decoration: none;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: rgba(229, 57, 53, 0.1);
+    transition: all 0.3s;
+    flex-shrink: 0;
+    border: 1px solid rgba(229, 57, 53, 0.2);
+}
+
+.back-button:hover {
+    background: rgba(229, 57, 53, 0.2);
+    transform: translateX(-3px);
+    box-shadow: 0 4px 15px rgba(229, 57, 53, 0.15);
+}
+
+.back-icon {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.back-text {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* User Avatar Section */
+.user-avatar-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.avatar-circle-header {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, rgba(229, 57, 53, 0.2), rgba(229, 57, 53, 0.4));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(229, 57, 53, 0.3);
+    box-shadow: 0 6px 20px rgba(229, 57, 53, 0.2);
+    transition: all 0.3s;
+}
+
+.avatar-circle-header:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(229, 57, 53, 0.3);
+}
+
+.avatar-text-header {
+    color: var(--text-light);
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.user-details-header {
+    flex: 1;
+}
+
+.user-name-header {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin: 0 0 5px 0;
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-email-header {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* User Stats Section */
+.user-stats-header {
+    display: flex;
+    gap: 30px;
+    flex-shrink: 0;
+}
+
+.stat-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(34, 34, 34, 0.4);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    min-width: 100px;
+    transition: all 0.3s;
+}
+
+.stat-header:hover {
+    background: rgba(34, 34, 34, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stat-number-header {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent-red);
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stat-number-header.unread-stat {
+    animation: pulse 2s infinite;
+}
+
+.stat-label-header {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* Online Status Indicator */
+.status-indicator {
+    font-size: 1.2rem;
+}
+
+.status-indicator.online {
+    color: #4CAF50;
+}
+
+.status-indicator.offline {
+    color: var(--text-muted);
+}
+
+.status-indicator.typing {
+    color: #2196F3;
+    animation: pulse 1s infinite;
+}
+
+/* ===== MODERN CHAT LAYOUT ===== */
+.chat-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.messages-container {
+    background: rgba(17, 17, 17, 0.2);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Message Wrapper */
+.message-wrapper {
+    display: flex;
+    margin: 15px 0;
+    align-items: flex-end;
+    max-width: 100%;
+}
+
+.message-left {
+    justify-content: flex-start;
+    margin-right: 20%;
+}
+
+.message-right {
+    justify-content: flex-end;
+    margin-left: 20%;
+}
+
+/* Message Avatars */
+.message-avatar-left,
+.message-avatar-right {
+    flex-shrink: 0;
+    margin: 0 10px;
+}
+
+.avatar-circle-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    transition: all 0.3s;
+}
+
+.message-left .avatar-circle-small {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(33, 150, 243, 0.4));
+    border: 2px solid rgba(33, 150, 243, 0.3);
+    color: var(--text-light);
+}
+
+.message-right .avatar-circle-small {
+    background: linear-gradient(135deg, rgba(229, 57, 53, 0.2), rgba(229, 57, 53, 0.4));
+    border: 2px solid rgba(229, 57, 53, 0.3);
+    color: var(--text-light);
+}
+
+/* Message Content */
+.message-content-wrapper {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.message-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+}
+
+.message-left .message-meta {
+    padding-left: 5px;
+}
+
+.message-right .message-meta {
+    padding-right: 5px;
+    flex-direction: row-reverse;
+}
+
+.message-username {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.message-time {
+    color: var(--text-muted);
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+/* Message Bubbles */
+.message-bubble {
+    padding: 14px 18px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+    line-height: 1.5;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    max-width: 100%;
+    transition: all 0.3s;
+}
+
+.user-bubble {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.1), rgba(33, 150, 243, 0.15));
+    border: 1px solid rgba(33, 150, 243, 0.15);
+    color: var(--text-light);
+    border-top-left-radius: 4px;
+    margin-right: 10px;
+}
+
+.admin-bubble {
+    background: linear-gradient(135deg, rgba(229, 57, 53, 0.15), rgba(229, 57, 53, 0.2));
+    border: 1px solid rgba(229, 57, 53, 0.2);
+    color: var(--text-light);
+    border-top-right-radius: 4px;
+    margin-left: 10px;
+}
+
+.message-text {
+    font-size: 1rem;
+}
+
+
+/* Message Status */
+.message-status {
+    text-align: right;
+    margin-top: 5px;
+    font-size: 0.7rem;
+}
+
+.read-status {
+    color: #4CAF50;
+    font-style: italic;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* Message Actions for Admin */
+.message-actions-admin {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.message-wrapper:hover .message-actions-admin {
+    opacity: 1;
+}
+
+.mark-read-btn, .delete-message-btn {
+    background: rgba(34, 34, 34, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+}
+
+.mark-read-btn:hover:not(:disabled) {
+    background: rgba(76, 175, 80, 0.3);
+    border-color: rgba(76, 175, 80, 0.5);
+}
+
+.delete-message-btn:hover {
+    background: rgba(229, 57, 53, 0.3);
+    border-color: rgba(229, 57, 53, 0.5);
+}
+
+.mark-read-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Typing Indicator Container */
+#typing-indicator-container {
+    margin: 5px 0 15px 0;
+}
+
+/* Typing Indicator - Positioned under last user message */
+.typing-indicator {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(17, 17, 17, 0.3);
+    border-radius: 18px;
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.3s ease;
+    max-width: fit-content;
+    margin-left: 60px; /* Align with user messages */
+    border: 1px solid rgba(33, 150, 243, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-top-left-radius: 4px;
+}
+
+.typing-dots {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    background: #2196F3; /* Blue for user typing */
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.typing-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* No Messages */
+.no-messages {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.no-messages-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.no-messages-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-light);
+}
+
+.no-messages-hint {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* Message Input Area */
+.message-input-area {
+    background: rgba(17, 17, 17, 0.3);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.message-input-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.message-input {
+    flex: 1;
+    background: rgba(34, 34, 34, 0.4);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-light);
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.message-input:focus {
+    outline: none;
+    border-color: rgba(229, 57, 53, 0.4);
+    box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.15);
+}
+
+.message-input::placeholder {
+    color: rgba(170, 170, 170, 0.6);
+}
+
+.send-button {
+    background: linear-gradient(135deg, var(--accent-red), #d32f2f);
+    color: white;
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.send-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3);
+}
+
+.send-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.send-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Input Footer */
+.input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 0 5px;
+}
+
+.char-counter {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.message-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+kbd {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Animations */
+@keyframes typing {
+    0%, 80%, 100% { 
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .message-left {
+        margin-right: 10%;
+    }
+    
+    .message-right {
+        margin-left: 10%;
+    }
+    
+    .message-content-wrapper {
+        max-width: 80%;
+    }
+    
+    .typing-indicator {
+        margin-left: 50px;
+    }
+    
+    .avatar-circle-small {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+    
+    .message-bubble {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .message-left,
+    .message-right {
+        margin: 10px 0;
+    }
+    
+    .message-content-wrapper {
+        max-width: 85%;
+    }
+    
+    .message-avatar-left,
+    .message-avatar-right {
+        margin: 0 8px;
+    }
+    
+    .avatar-circle-small {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+    
+    .typing-indicator {
+        margin-left: 46px;
+        padding: 8px 12px;
+    }
+}
+</style>
+
+
+
+
+<!-- Chat Header with User Info -->
+<div class="chat-header-user">
+    <div class="user-info-header">
+        <a href="/chat/admin" class="back-button">
+            <span class="back-icon">←</span>
+            <span class="back-text">Inbox</span>
+        </a>
+        <div class="user-avatar-header">
+            <div class="avatar-circle-header">
+                <span class="avatar-text-header"><%= targetUser?.username?.charAt(0).toUpperCase() || 'A' %></span>
+            </div>
+            <div class="user-details-header">
+                <h2 class="user-name-header"><%= targetUser?.username || 'Anonymous User' %></h2>
+                <p class="user-email-header"><%= targetUser?.email || 'No email provided' %></p>
+            </div>
+        </div>
+        <div class="user-stats-header">
+            <div class="stat-header">
+                <span class="stat-number-header" id="message-count"><%= messages.length %></span>
+                <span class="stat-label-header">Messages</span>
+            </div>
+            <% if (unreadCount > 0) { %>
+            <div class="stat-header">
+                <span class="stat-number-header unread-stat"><%= unreadCount %></span>
+                <span class="stat-label-header">Unread</span>
+            </div>
+            <% } %>
+            <div class="stat-header">
+                <span class="stat-number-header" id="online-status">●</span>
+                <span class="stat-label-header">Status</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Socket.IO client -->
+<script src="/socket.io/socket.io.js"></script>
+<!-- Chat Area -->
+<section class="container chat-container">
+    <div class="messages-container" id="messages-container">
+        <% if (messages && messages.length > 0) { %>
+            <% messages.forEach(function(message) { 
+                const isAdmin = message.is_from_admin;  
+            %>
+                <div class="message-wrapper <%= isAdmin ? 'message-right' : 'message-left' %>" 
+                     data-message-id="<%= message.id %>" 
+                     data-user-id="<%= message.user_id %>">
+                    <% if (!isAdmin) { %>
+                        <!-- User message (left side) -->
+                        <div class="message-avatar-left">
+                            <div class="avatar-circle-small">
+                                <span class="avatar-text-small"><%= targetUser?.username?.charAt(0).toUpperCase() || 'U' %></span>
+                            </div>
+                        </div>
+                    <% } %>
+                    
+                    <div class="message-content-wrapper">
+                        <div class="message-meta">
+                            <span class="message-username"><%= message.username || (isAdmin ? 'You' : targetUser?.username || 'User') %></span>
+                            <span class="message-time"><%= new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
+                        </div>
+                        <div class="message-bubble <%= isAdmin ? 'admin-bubble' : 'user-bubble' %>">
+                            <div class="message-text">
+                                <%= message.content %>
+                            </div>
+                            <!-- <% if (message.is_read && !isAdmin) { %>
+                                <div class="message-status">
+                                    <span class="read-status">✓ Read</span>
+                                </div>
+                            <% } %> -->
+                        </div>
+                        <% if (!isAdmin) { %>
+                        <div class="message-actions-admin">
+                            <button class="mark-read-btn" data-message-id="<%= message.id %>" 
+                                    title="Mark as read" <%= message.is_read ? 'disabled' : '' %>>
+                                <span class="action-icon">✓</span>
+                            </button>
+                            <button class="delete-message-btn" data-message-id="<%= message.id %>" 
+                                    title="Delete message">
+                                <span class="action-icon">🗑️</span>
+                            </button>
+                        </div>
+                        <% } %>
+                    </div>
+                    
+                    <% if (isAdmin) { %>
+                        <!-- Admin message (right side) -->
+                        <div class="message-avatar-right">
+                            <div class="avatar-circle-small admin-avatar">
+                                <span class="avatar-text-small">A</span>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+            <% }); %>
+            
+            <!-- Typing indicator container (placed after last user message) -->
+            <div id="typing-indicator-container">
+                <div id="typing-indicator" class="typing-indicator">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span class="typing-text"><%= targetUser?.username || 'User' %> is typing...</span>
+                </div>
+            </div>
+            
+            <div id="scroll-anchor"></div>
+        <% } else { %>
+            <div class="no-messages">
+                <div class="no-messages-icon">💬</div>
+                <div class="no-messages-text">No messages from this user yet.</div>
+                <p class="no-messages-hint">Start the conversation by typing a message below</p>
+            </div>
+            <div id="scroll-anchor"></div>
+        <% } %>
+    </div>
+
+    <!-- Admin Reply Form -->
+    <div class="message-input-area">
+        <form class="message-form" id="message-form">
+            <div class="message-input-container">
+                <input type="text" name="content" class="message-input" id="message-input" 
+                       placeholder="Type a reply to <%= targetUser?.username || 'this user' %>..." 
+                       maxlength="500" autocomplete="off">
+                <button type="submit" class="send-button" id="send-button">
+                    <svg class="send-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-footer">
+                <div class="char-counter">
+                    <span id="char-count">0</span>/500
+                </div>
+                <div class="message-hint">
+                    Press <kbd>Enter</kbd> to send
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Socket.IO
+    const socket = io({
+        withCredentials: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+    });
+
+    const messagesContainer = document.getElementById('messages-container');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const messageCountElement = document.getElementById('message-count');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const typingIndicatorContainer = document.getElementById('typing-indicator-container');
+    const unreadStatElement = document.querySelector('.unread-stat');
+    const onlineStatusElement = document.getElementById('online-status');
+    
+    // Get current user info
+    const currentUserId = '<%= user.id || "admin" %>';
+    const currentUsername = '<%= user.username || "Admin" %>';
+    const targetUserId = '<%= targetUser?.id %>';
+    const targetUsername = '<%= targetUser?.username || "User" %>';
+    const targetUserInitial = '<%= targetUser?.username?.charAt(0).toUpperCase() || "U" %>';
+    
+    // Typing management
+    let typingTimeout;
+    let isTyping = false;
+    let lastTypingTime = 0;
+    const TYPING_DEBOUNCE = 300; // ms
+    const TYPING_STOP_DELAY = 1000; // ms
+
+    // Polling variables
+    let pollingInterval;
+    let lastPollingUpdate = new Date().toISOString();
+
+    // Scroll anchor
+    let scrollAnchor = document.getElementById('scroll-anchor');
+    if (!scrollAnchor) {
+        scrollAnchor = document.createElement('div');
+        scrollAnchor.id = 'scroll-anchor';
+        messagesContainer.appendChild(scrollAnchor);
+    }
+
+    // Socket.IO event handlers
+    socket.on('connect', () => {
+        console.log('✅ Admin connected to chat server');
+        updateOnlineStatus('online');
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('❌ Connection error:', error);
+        updateOnlineStatus('offline');
+        
+        // Fallback to polling
+        startPolling();
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log('🔌 Disconnected:', reason);
+        updateOnlineStatus('offline');
+    });
+
+    socket.on('new-message', (message) => {
+        console.log('📩 New message received:', message);
+        
+        // Only handle messages for this specific user
+        if (message.user_id === targetUserId || (message.is_from_admin && message.user_id === currentUserId)) {
+            handleNewMessage(message);
+            
+            // If it's a new message from user, update unread count
+            if (!message.is_from_admin && unreadStatElement) {
+                const currentUnread = parseInt(unreadStatElement.textContent) || 0;
+                unreadStatElement.textContent = currentUnread + 1;
+            }
+        }
+    });
+
+    socket.on('user-typing', (data) => {
+        if (data.userId === targetUserId) {
+            showTypingIndicator(data.isTyping);
+        }
+    });
+
+    socket.on('user-status', (data) => {
+        if (data.userId === targetUserId) {
+            updateOnlineStatus(data.status);
+        }
+    });
+
+    socket.on('message-read', (data) => {
+        markMessageAsRead(data.messageId);
+        
+        // Update unread count if message was from this user
+        const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+        if (messageElement && messageElement.dataset.userId === targetUserId && unreadStatElement) {
+            const currentUnread = parseInt(unreadStatElement.textContent) || 0;
+            if (currentUnread > 0) {
+                unreadStatElement.textContent = currentUnread - 1;
+            }
+        }
+    });
+
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+        showNotification(error.message || 'An error occurred', 'error');
+    });
+
+    socket.on('connected', (data) => {
+        console.log('🔗 Socket connected with data:', data);
+    });
+
+    // Handle new message
+    function handleNewMessage(message) {
+        console.log('📨 Processing message for display:', message);
+        
+        // Remove "no messages" placeholder if it exists
+        const noMessages = document.querySelector('.no-messages');
+        if (noMessages) {
+            noMessages.remove();
+        }
+
+        // Hide typing indicator when new message arrives
+        showTypingIndicator(false);
+
+        // Check if message already exists
+        const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+        if (existingMessage) {
+            console.log('⚠️ Message already exists, skipping');
+            return;
+        }
+
+        // Create and add message element
+        const messageElement = createMessageElement(message);
+        
+        // Insert before typing indicator if it exists, otherwise before scroll anchor
+        const insertBeforeElement = typingIndicatorContainer || scrollAnchor;
+        messagesContainer.insertBefore(messageElement, insertBeforeElement);
+        
+        // Update message count
+        if (messageCountElement) {
+            messageCountElement.textContent = parseInt(messageCountElement.textContent) + 1;
+        }
+
+        // Scroll to bottom
+        scrollToBottom();
+        
+        // Play notification sound for new messages from user
+        if (!message.is_from_admin) {
+            playNotificationSound();
+        }
+    }
+
+    // Update online status
+    function updateOnlineStatus(status) {
+        if (!onlineStatusElement) return;
+        
+        const statusMap = {
+            'online': { text: '●', className: 'online', label: 'Online' },
+            'offline': { text: '●', className: 'offline', label: 'Offline' },
+            'typing': { text: '●', className: 'typing', label: 'Typing...' }
+        };
+        
+        const statusInfo = statusMap[status] || statusMap.offline;
+        onlineStatusElement.textContent = statusInfo.text;
+        onlineStatusElement.className = `status-indicator ${statusInfo.className}`;
+        
+        // Update the label
+        const statusLabel = document.querySelector('.stat-header:last-child .stat-label-header');
+        if (statusLabel) {
+            statusLabel.textContent = statusInfo.label;
+        }
+    }
+
+    // Create message element
+    function createMessageElement(message) {
+        const isAdmin = message.is_from_admin;
+        const messageWrapper = document.createElement('div');
+        messageWrapper.className = `message-wrapper ${isAdmin ? 'message-right' : 'message-left'}`;
+        messageWrapper.dataset.messageId = message.id;
+        messageWrapper.dataset.userId = message.user_id;
+        
+        // Format time
+        const time = new Date(message.created_at);
+        const formattedTime = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        // Determine username
+        let username = message.username;
+        if (isAdmin) {
+            username = 'You';
+        } else if (message.user_id === targetUserId) {
+            username = targetUsername;
+        }
+        
+        // Build message HTML based on sender
+        let messageHTML = '';
+        
+        if (isAdmin) {
+            // Admin message (right side)
+            messageHTML = `
+                <div class="message-content-wrapper">
+                    <div class="message-meta">
+                        <span class="message-username">${escapeHtml(username)}</span>
+                        <span class="message-time">${formattedTime}</span>
+                    </div>
+                    <div class="message-bubble admin-bubble">
+                        <div class="message-text">
+                            ${escapeHtml(message.content)}
+                        </div>
+                    </div>
+                </div>
+                <div class="message-avatar-right">
+                    <div class="avatar-circle-small admin-avatar">
+                        <span class="avatar-text-small">A</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            // User message (left side)
+            messageHTML = `
+                <div class="message-avatar-left">
+                    <div class="avatar-circle-small">
+                        <span class="avatar-text-small">${targetUserInitial}</span>
+                    </div>
+                </div>
+                <div class="message-content-wrapper">
+                    <div class="message-meta">
+                        <span class="message-username">${escapeHtml(username)}</span>
+                        <span class="message-time">${formattedTime}</span>
+                    </div>
+                    <div class="message-bubble user-bubble">
+                        <div class="message-text">
+                            ${escapeHtml(message.content)}
+                        </div>
+                        ${message.is_read ? '<div class="message-status"><span class="read-status">✓ Read</span></div>' : ''}
+                    </div>
+                    <div class="message-actions-admin">
+                        <button class="mark-read-btn" data-message-id="${message.id}" 
+                                title="Mark as read" ${message.is_read ? 'disabled' : ''}>
+                            <span class="action-icon">✓</span>
+                        </button>
+                        <button class="delete-message-btn" data-message-id="${message.id}" 
+                                title="Delete message">
+                            <span class="action-icon">🗑️</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        messageWrapper.innerHTML = messageHTML;
+        
+        // Add fade-in animation
+        messageWrapper.style.opacity = '0';
+        messageWrapper.style.transform = isAdmin ? 'translateX(20px)' : 'translateX(-20px)';
+        setTimeout(() => {
+            messageWrapper.style.transition = 'all 0.3s ease';
+            messageWrapper.style.opacity = '1';
+            messageWrapper.style.transform = 'translateX(0)';
+        }, 10);
+        
+        return messageWrapper;
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Scroll to bottom
+    function scrollToBottom() {
+        scrollAnchor.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Initial scroll
+    setTimeout(scrollToBottom, 100);
+
+    // Typing indicator - Show/hide with proper positioning
+    function showTypingIndicator(show) {
+        if (show) {
+            // Ensure typing indicator container exists
+            if (!typingIndicatorContainer) {
+                createTypingIndicatorContainer();
+            }
+            
+            // Show the indicator
+            typingIndicator.style.display = 'flex';
+            
+            // Position it after the last user message
+            positionTypingIndicator();
+            
+            // Update online status to typing
+            updateOnlineStatus('typing');
+            
+            // Auto-hide after 3 seconds of no new typing
+            clearTimeout(typingIndicator._hideTimeout);
+            typingIndicator._hideTimeout = setTimeout(() => {
+                showTypingIndicator(false);
+                updateOnlineStatus('online');
+            }, 3000);
+        } else {
+            if (typingIndicator) {
+                typingIndicator.style.display = 'none';
+            }
+            updateOnlineStatus('online');
+        }
+    }
+
+    // Create typing indicator container if it doesn't exist
+    function createTypingIndicatorContainer() {
+        const container = document.createElement('div');
+        container.id = 'typing-indicator-container';
+        container.innerHTML = `
+            <div id="typing-indicator" class="typing-indicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span class="typing-text">${targetUsername} is typing...</span>
+            </div>
+        `;
+        messagesContainer.appendChild(container);
+        
+        // Update references
+        typingIndicatorContainer = container;
+        typingIndicator = container.querySelector('#typing-indicator');
+    }
+
+    // Position typing indicator after last user message
+    function positionTypingIndicator() {
+        if (!typingIndicatorContainer) return;
+        
+        const userMessages = document.querySelectorAll('.message-left');
+        if (userMessages.length > 0) {
+            const lastUserMessage = userMessages[userMessages.length - 1];
+            // Ensure it comes after the last user message
+            messagesContainer.insertBefore(typingIndicatorContainer, lastUserMessage.nextSibling);
+        }
+    }
+
+    // Mark message as read
+    function markMessageAsRead(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            const messageDiv = messageElement.querySelector('.message-bubble');
+            if (!messageDiv.querySelector('.message-status')) {
+                messageDiv.innerHTML += '<div class="message-status"><span class="read-status">✓ Read</span></div>';
+            }
+            
+            // Disable the mark as read button
+            const markReadBtn = messageElement.querySelector('.mark-read-btn');
+            if (markReadBtn) {
+                markReadBtn.disabled = true;
+            }
+        }
+    }
+
+    // Play notification sound
+    function playNotificationSound() {
+        try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.3;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {
+            console.log('Notification sound error:', e);
+        }
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+            <span>${escapeHtml(message)}</span>
+            <button class="notification-close">&times;</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Add close functionality
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.remove();
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Character counter for admin input
+    messageInput.addEventListener('input', function() {
+        const length = this.value.length;
+        const charCountElement = document.getElementById('char-count');
+        if (charCountElement) {
+            charCountElement.textContent = length;
+            
+            if (length > 450) {
+                charCountElement.style.color = 'var(--accent-red)';
+            } else if (length > 400) {
+                charCountElement.style.color = '#FF9800';
+            } else {
+                charCountElement.style.color = 'var(--text-muted)';
+            }
+        }
+    });
+
+    // Form submission
+    messageForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const content = messageInput.value.trim();
+        
+        if (!content) {
+            showNotification('Please enter a message', 'error');
+            return;
+        }
+        
+        if (content.length > 500) {
+            showNotification('Message too long (max 500 characters)', 'error');
+            return;
+        }
+
+        // Disable input while sending
+        messageInput.disabled = true;
+        const originalButtonText = sendButton.innerHTML;
+        sendButton.innerHTML = '<div class="loading-spinner"></div>';
+        sendButton.disabled = true;
+        
+        try {
+            console.log('📤 Admin sending message to user:', targetUserId);
+            
+            // Send via Socket.IO
+            socket.emit('send-message', {
+                content: content,
+                targetUserId: targetUserId
+            });
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Reset character counter
+            const charCountElement = document.getElementById('char-count');
+            if (charCountElement) {
+                charCountElement.textContent = '0';
+                charCountElement.style.color = 'var(--text-muted)';
+            }
+            
+            console.log('✅ Admin message sent via Socket.IO');
+            
+        } catch (error) {
+            console.error('❌ Error sending message:', error);
+            showNotification('Failed to send message', 'error');
+            
+            // Try HTTP fallback
+            try {
+                console.log('🔄 Trying HTTP fallback...');
+                const response = await fetch(`/chat/admin/reply/${targetUserId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: content })
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Message sent via HTTP');
+                } else {
+                    throw new Error('HTTP send failed');
+                }
+            } catch (httpError) {
+                console.error('❌ HTTP fallback also failed:', httpError);
+            }
+        } finally {
+            // Re-enable input
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.innerHTML = originalButtonText;
+            messageInput.focus();
+        }
+    });
+
+    // Mark as read functionality
+    messagesContainer.addEventListener('click', async function(e) {
+        if (e.target.closest('.mark-read-btn')) {
+            const messageId = e.target.closest('.mark-read-btn').dataset.messageId;
+            const btn = e.target.closest('.mark-read-btn');
+            
+            try {
+                // Send via Socket.IO
+                socket.emit('mark-as-read', { messageId: messageId });
+                
+                // Update UI immediately
+                btn.disabled = true;
+                btn.innerHTML = '<span class="action-icon">✓</span>';
+                
+                // Add read status indicator
+                const messageWrapper = btn.closest('.message-wrapper');
+                const messageDiv = messageWrapper.querySelector('.message-bubble');
+                if (!messageDiv.querySelector('.message-status')) {
+                    messageDiv.innerHTML += '<div class="message-status"><span class="read-status">✓ Read</span></div>';
+                }
+                
+                // Update unread count
+                if (unreadStatElement) {
+                    const currentUnread = parseInt(unreadStatElement.textContent) || 0;
+                    if (currentUnread > 0) {
+                        unreadStatElement.textContent = currentUnread - 1;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error marking as read:', error);
+                alert('Failed to mark as read');
+            }
+        }
+        
+        // Delete message functionality
+        if (e.target.closest('.delete-message-btn')) {
+            if (!confirm('Are you sure you want to delete this message?')) {
+                return;
+            }
+            
+            const messageId = e.target.closest('.delete-message-btn').dataset.messageId;
+            const messageWrapper = e.target.closest('.message-wrapper');
+            
+            try {
+                const response = await fetch(`/chat/admin/delete/${messageId}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    messageWrapper.style.opacity = '0';
+                    messageWrapper.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        messageWrapper.remove();
+                        // Update message count
+                        if (messageCountElement) {
+                            messageCountElement.textContent = parseInt(messageCountElement.textContent) - 1;
+                        }
+                    }, 300);
+                }
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Failed to delete message');
+            }
+        }
+    });
+
+    // Enter key handling
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            messageForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Auto-focus
+    messageInput.focus();
+
+    // Polling fallback
+    function startPolling() {
+        console.log('🔄 Starting polling fallback for admin');
+        
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+        
+        pollingInterval = setInterval(fetchMessages, 3000);
+    }
+    
+    async function fetchMessages() {
+        try {
+            console.log('📡 Admin polling for new messages...');
+            const response = await fetch(`/chat/api/messages?lastUpdate=${lastPollingUpdate}&userId=${targetUserId}`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.messages && data.messages.length > 0) {
+                    console.log(`📩 Admin received ${data.messages.length} new messages via polling`);
+                    data.messages.forEach(handleNewMessage);
+                    lastPollingUpdate = new Date().toISOString();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Admin polling error:', error);
+        }
+    }
+    
+    // Clean up
+    window.addEventListener('beforeunload', () => {
+        socket.disconnect();
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+    });
+
+    // Initialize
+    setTimeout(scrollToBottom, 100);
+    
+    // Test Socket.IO connection
+    console.log('🚀 Admin chat interface initialized');
+    console.log('👤 Admin ID:', currentUserId);
+    console.log('🎯 Target user ID:', targetUserId);
+});
+</script>

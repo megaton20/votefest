@@ -1,0 +1,31 @@
+
+  <br>
+  <br>
+  <br>
+    
+    <!-- Registration Form -->
+    <section class="container form-container">
+       <a href="/">  <img src="/img/logo-2.PNG" alt=""></a>
+        <p class="form-subtitle">Become a ghost in the machine.</p>
+        
+        <form id="register-form" action="/auth/register" method="post">
+            <div class="form-group">
+                <input type="email" name="email" id="register-email" class="form-input" placeholder="Enter email" required>
+            </div>
+            
+            <div class="form-group">
+                <input type="password" name="password" id="password" class="form-input" placeholder="Enter password">
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="cta-button" style="width: 100%;">Start Anonymously</button>
+            </div>
+        </form>
+        
+        <p class="form-note">Your identity is encrypted and never stored. Messages disappear after being read. <a href="#" onclick="alert('We use end-to-end encryption for all messages. Your email is only used for account recovery (optional). Usernames are completely anonymous.');">Privacy details</a></p>
+        
+        <p class="form-note" style="margin-top: 10px;">
+            Already have an account? <a href="/auth/login">Login anonymously</a>
+        </p>
+    </section>
+
