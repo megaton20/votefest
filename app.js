@@ -29,17 +29,25 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===== SESSION SETUP =====
-// Simple memory store (works without MongoDB session store)
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-changeme-12345',
     resave: false,
-    saveUninitialized: false, // Changed to false for security
+    saveUninitialized: false,
     cookie: { 
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-    }
+        secure: process.env.NODE_ENV === 'production' ? true : false, // Only HTTPS in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site in production
+        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+    },
+    store: process.env.NODE_ENV === 'production' ? 
+        (() => {
+            // For production, you should use a proper session store
+            // Using memory store for now, but consider Redis for production
+            console.log('⚠️ Using memory session store - not suitable for production scaling');
+            return new session.MemoryStore();
+        })() : 
+        new session.MemoryStore()
 });
 
 app.use(sessionMiddleware);
@@ -69,16 +77,33 @@ app.use((req, res, next) => {
 
 // ===== SERVER & SOCKET.IO SETUP =====
 const server = http.createServer(app);
+
+// Get allowed origins from environment or use defaults
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+    ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
+    : ['http://localhost:5000', 'http://127.0.0.1:3000', process.env.SOCKET_IO_ORIGIN];
+
 const io = socketIo(server, {
     cors: {
-        origin: process.env.NODE_ENV === 'production' ? 
-            [process.env.FRONTEND_URL || `http://localhost:${process.env.PORT}`] : 
-            ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        origin: function(origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+            
+            // Check if origin is in allowed list
+            if (allowedOrigins.indexOf(origin) === -1) {
+                const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+                console.error('CORS Error:', msg);
+                return callback(new Error(msg), false);
+            }
+            return callback(null, true);
+        },
         methods: ['GET', 'POST'],
         credentials: true
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    allowEIO3: true // For compatibility with older clients
 });
+
 
 // ===== SOCKET.IO AUTHENTICATION =====
 // Simple authentication wrapper - NO REQUEST OBJECT MODIFICATION
