@@ -1,6 +1,6 @@
-if (process.env.NODE_ENV == "development") {
+// if (process.env.NODE_ENV == "development") {
     require('dotenv').config();
-}
+// }
 
 const express = require('express');
 const app = express();
@@ -107,68 +107,72 @@ const io = socketIo(server, {
 
 
 // ===== SOCKET.IO AUTHENTICATION =====
-// Simple authentication wrapper - NO REQUEST OBJECT MODIFICATION
+// ===== SOCKET.IO AUTHENTICATION =====
 io.use((socket, next) => {
-    // Get session ID from handshake
+    // For development, allow all
+    if (process.env.NODE_ENV === 'development') {
+        socket.userId = socket.handshake.auth.userId || 'anonymous';
+        socket.username = socket.handshake.auth.username || 'Anonymous';
+        socket.role = socket.handshake.auth.role || 'guest';
+        return next();
+    }
+    
+    // For production, try to authenticate
     const sessionId = socket.handshake.auth.sessionId || 
                      socket.handshake.headers.cookie?.match(/connect\.sid=([^;]+)/)?.[1];
     
-    if (sessionId) {
-        // Get session from memory store
-        sessionMiddleware(socket.request, {}, (err) => {
-            if (err) {
-                console.error('Session middleware error:', err);
-                socket.userId = 'anonymous';
-                socket.username = 'Anonymous';
-                socket.role = 'guest';
-                return next();
-            }
-            
-            // Check if user is authenticated
-            if (socket.request.session && socket.request.session.passport) {
-                const userId = socket.request.session.passport.user;
-                
-                // Get user from database
-              const User = require('./models/User');
-                User.getById(userId)
-                    .then(user => {
-                        if (user) {
-                            // Store user info on SOCKET object (not request!)
-                            socket.userId = user.id;
-                            socket.username = user.username || 'Anonymous';
-                            socket.role = user.role || 'user';
-                            socket.user = user;
-                            console.log(`✅ Socket authenticated: ${socket.username} (${user.id})`);
-                        } else {
-                            socket.userId = 'anonymous';
-                            socket.username = 'Anonymous';
-                            socket.role = 'guest';
-                        }
-                        next();
-                    })
-                    .catch(err => {
-                        console.error('User fetch error:', err);
-                        socket.userId = 'anonymous';
-                        socket.username = 'Anonymous';
-                        socket.role = 'guest';
-                        next();
-                    });
-            } else {
-                socket.userId = 'anonymous';
-                socket.username = 'Anonymous';
-                socket.role = 'guest';
-                next();
-            }
-        });
-    } else {
-        // No session, anonymous user
+    if (!sessionId) {
+        // Allow anonymous for chat
         socket.userId = 'anonymous';
         socket.username = 'Anonymous';
         socket.role = 'guest';
-        next();
+        return next();
     }
+    
+    // Get session from memory store
+    sessionMiddleware(socket.request, {}, (err) => {
+        if (err) {
+            console.error('Session middleware error:', err);
+            socket.userId = 'anonymous';
+            socket.username = 'Anonymous';
+            socket.role = 'guest';
+            return next();
+        }
+        
+        // Check if user is authenticated
+        if (socket.request.session && socket.request.session.passport) {
+            const userId = socket.request.session.passport.user;
+            
+            const User = require('./models/User');
+            User.getById(userId)
+                .then(user => {
+                    if (user) {
+                        socket.userId = user.id;
+                        socket.username = user.username || 'Anonymous';
+                        socket.role = user.role || 'user';
+                        socket.user = user;
+                    } else {
+                        socket.userId = 'anonymous';
+                        socket.username = 'Anonymous';
+                        socket.role = 'guest';
+                    }
+                    next();
+                })
+                .catch(err => {
+                    console.error('User fetch error:', err);
+                    socket.userId = 'anonymous';
+                    socket.username = 'Anonymous';
+                    socket.role = 'guest';
+                    next();
+                });
+        } else {
+            socket.userId = 'anonymous';
+            socket.username = 'Anonymous';
+            socket.role = 'guest';
+            next();
+        }
+    });
 });
-
 // ===== SOCKET.IO EVENT HANDLERS =====
 io.on('connection', (socket) => {
     console.log(`🔗 New connection: ${socket.username} (${socket.userId}, ${socket.role})`);
@@ -387,6 +391,14 @@ io.on('connection', (socket) => {
 });
 
 // ===== ROUTES =====
+// Add this before your routes
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
 const web = require('./router/web');
 const api = require('./router/api');
 
