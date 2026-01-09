@@ -32,10 +32,7 @@ passport.deserializeUser(async (id, done) => {
 
 // Local strategy for traditional login
 passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
-  try {
-
-    console.log(email);
-    
+  try {    
     
     // Query the database for a user with the provided email
     const user = await User.findByEmail(email);
