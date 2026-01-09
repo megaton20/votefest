@@ -72,7 +72,7 @@ const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
         origin: process.env.NODE_ENV === 'production' ? 
-            [process.env.FRONTEND_URL || 'http://localhost:3000'] : 
+            [process.env.FRONTEND_URL || `http://localhost:${process.env.PORT}`] : 
             ['http://localhost:3000', 'http://127.0.0.1:3000'],
         methods: ['GET', 'POST'],
         credentials: true
