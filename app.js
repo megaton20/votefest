@@ -1,5 +1,5 @@
 // if (process.env.NODE_ENV == "development") {
-    // require('dotenv').config();
+    require('dotenv').config();
 // }
 
 const express = require('express');
@@ -144,6 +144,9 @@ io.use((socket, next) => {
             const userId = socket.request.session.passport.user;
             
             const User = require('./models/User');
+
+            console.log("requsrsssss");
+            
             User.getById(userId)
                 .then(user => {
                     if (user) {
