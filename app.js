@@ -83,7 +83,7 @@ const server = http.createServer(app);
 // Get allowed origins from environment or use defaults
 const allowedOrigins = process.env.NODE_ENV === 'production' 
     ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
-    : ['http://localhost:5000', 'http://127.0.0.1:3000', process.env.SOCKET_IO_ORIGIN];
+    : ['http://localhost:5000', 'http://127.0.0.1:3000','https://unsaid-ijvh.onrender.com', process.env.SOCKET_IO_ORIGIN];
 
 const io = socketIo(server, {
     cors: {
