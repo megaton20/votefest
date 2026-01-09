@@ -145,7 +145,7 @@ io.use((socket, next) => {
             
             const User = require('./models/User');
 
-            console.log("requsrsssss");
+            console.log(User.getById(userId));
             
             User.getById(userId)
                 .then(user => {
