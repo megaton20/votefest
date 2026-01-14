@@ -170,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Socket.IO event handlers
     socket.on('connect', () => {
-        console.log('✅ Admin connected to chat server');
         updateOnlineStatus('online');
     });
 
@@ -218,7 +217,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.on('connected', (data) => {
-        console.log('🔗 Socket connected with data:', data);
+        console.log("connected");
+        
     });
 
     // Handle new message
@@ -720,9 +720,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize
     setTimeout(scrollToBottom, 100);
     
-    // Test Socket.IO connection
-    console.log('🚀 Admin chat interface initialized');
-    console.log('👤 Admin ID:', currentUserId);
-    console.log('🎯 Target user ID:', targetUserId);
 });
 </script>

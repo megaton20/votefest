@@ -31,14 +31,14 @@
                         <!-- Admin message (left side) -->
                         <div class="message-avatar-left">
                             <div class="avatar-circle-small">
-                                <span class="avatar-text-small">A</span>
+                                <span class="avatar-text-small">UN</span>
                             </div>
                         </div>
                     <% } %>
                     
                     <div class="message-content-wrapper">
                         <div class="message-meta">
-                            <span class="message-username"><%= message.username || (isFromAdmin ? 'Admin' : 'You') %></span>
+                            <span class="message-username"><%= message.username || (isFromAdmin ? 'Unsaid' : 'You') %></span>
                             <span class="message-time"><%= new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
                         </div>
                         <div class="message-bubble <%= isFromAdmin ? 'admin-bubble' : 'user-bubble' %>">
@@ -72,7 +72,7 @@
                         <span></span>
                         <span></span>
                     </div>
-                    <span class="typing-text">Admin is typing...</span>
+                    <span class="typing-text">Unsaid is typing...</span>
                 </div>
             </div>
             
@@ -80,7 +80,7 @@
         <% } else { %>
             <div class="no-messages">
                 <div class="no-messages-icon">💬</div>
-                <div class="no-messages-text">Start a conversation with Admin...</div>
+                <div class="no-messages-text">Start a conversation with Unsaid...</div>
                 <p class="no-messages-hint">Type your message below to get started</p>
             </div>
             <div id="scroll-anchor"></div>
@@ -91,7 +91,7 @@
         <form class="message-form" id="message-form">
             <div class="message-input-container">
                 <input type="text" name="content" class="message-input" id="message-input" 
-                       placeholder="Type your message to Admin..." maxlength="500" autocomplete="off">
+                       placeholder="Type your message to Unsaid..." maxlength="500" autocomplete="off">
                 <button type="submit" class="send-button" id="send-button">
                     <svg class="send-icon" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let isTyping = false;
     let lastTypingTime = 0;
     const TYPING_DEBOUNCE = 500; // ms
-    const TYPING_STOP_DELAY = 4000; // ms
+    const TYPING_STOP_DELAY = 6000; // ms
 
     // Polling variables
     let pollingInterval;
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.on('connected', (data) => {
         console.log('🔗 Socket connected with data:', data);
         if (data.userId && data.userId !== 'anonymous') {
-            console.log(`👤 Logged in as: ${data.username} (${data.role})`);
+            // console.log(`👤 Logged in as: ${data.username} (${data.role})`);
         }
     });
 
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Determine username
         let username = message.username;
         if (isFromAdmin) {
-            username = 'Admin';
+            username = 'Unsaid';
         } else if (message.user_id === currentUserId) {
             username = 'You';
         }

@@ -1,4 +1,4 @@
-// require('dotenv').config();
+require('dotenv').config();
 
 const express = require('express');
 const app = express();
@@ -35,7 +35,7 @@ const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
         // Secure cookies only in production (HTTPS)
@@ -76,30 +76,30 @@ const server = http.createServer(app);
 let corsOptions;
 if (isProduction) {
     // Production settings
-    const allowedOrigins = process.env.ALLOWED_ORIGINS ? 
-        process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) : 
+    const allowedOrigins = process.env.ALLOWED_ORIGINS ?
+        process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) :
         [];
-    
+
     console.log(' Production mode - Allowed origins:', allowedOrigins);
-    
+
     corsOptions = {
-        origin: function(origin, callback) {
+        origin: function (origin, callback) {
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) {
                 console.log('⚠️ Request with no origin, allowing...');
                 return callback(null, true);
             }
-            
+
             // Check if origin is in allowed list
             if (allowedOrigins.length === 0) {
                 console.log('⚠️ No allowed origins configured, allowing all');
                 return callback(null, true);
             }
-            
+
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
-            
+
             console.error(` CORS blocked origin: ${origin}`);
             return callback(new Error('Not allowed by CORS'), false);
         },
@@ -124,7 +124,7 @@ const io = socketIo(server, {
 // ===== SOCKET.IO AUTHENTICATION =====
 io.use((socket, next) => {
     console.log('🔍 Socket connection attempt from:', socket.handshake.headers.origin);
-    
+
     // Check if we have user data passed in auth (from frontend)
     const authData = socket.handshake.auth;
     if (authData && authData.userId && authData.userId !== '') {
@@ -134,7 +134,7 @@ io.use((socket, next) => {
         socket.role = authData.role || 'user';
         return next();
     }
-    
+
     // Try to get session from cookies
     const cookies = socket.handshake.headers.cookie;
     if (!cookies) {
@@ -144,7 +144,7 @@ io.use((socket, next) => {
         socket.role = 'guest';
         return next();
     }
-    
+
     const sessionCookie = cookies.match(/connect\.sid=([^;]+)/)?.[1];
     if (!sessionCookie) {
         console.log(' No session cookie found');
@@ -153,9 +153,9 @@ io.use((socket, next) => {
         socket.role = 'guest';
         return next();
     }
-    
+
     console.log('🍪 Found session cookie, attempting authentication...');
-    
+
     // Use session middleware to restore session
     sessionMiddleware(socket.request, {}, (err) => {
         if (err) {
@@ -165,12 +165,12 @@ io.use((socket, next) => {
             socket.role = 'guest';
             return next();
         }
-        
+
         // Check if user is authenticated in session
         if (socket.request.session && socket.request.session.passport) {
             const userId = socket.request.session.passport.user;
             console.log(' Found user ID in session:', userId);
-            
+
             const User = require('./models/User');
             User.getById(userId)
                 .then(user => {
@@ -208,20 +208,23 @@ io.use((socket, next) => {
 // ===== SOCKET.IO EVENT HANDLERS =====
 io.on('connection', (socket) => {
     console.log(`🔗 New connection: ${socket.username} (${socket.userId}, ${socket.role})`);
-    
+
     // Join appropriate rooms
     if (socket.userId !== 'anonymous') {
         socket.join(`user:${socket.userId}`);
-        
+
         if (socket.role === 'admin') {
             socket.join('admin-room');
             console.log(`👑 Admin joined admin-room: ${socket.username}`);
-            
+
             // Broadcast admin online status
             socket.broadcast.emit('admin-status', {
                 status: 'online',
                 username: socket.username
             });
+            
+            // Send initial conversations to admin
+            sendAdminConversations(socket);
         } else {
             // Notify admins about user online status
             io.to('admin-room').emit('user-status', {
@@ -230,7 +233,7 @@ io.on('connection', (socket) => {
                 status: 'online'
             });
         }
-        
+
         // Send connection confirmation with user data
         socket.emit('connected', {
             userId: socket.userId,
@@ -247,57 +250,54 @@ io.on('connection', (socket) => {
             authenticated: false
         });
     }
-    
+
     // ===== MESSAGE SENDING =====
     socket.on('send-message', async (data) => {
-        // console.log(` Message from ${socket.username}:`, data);
-        
         try {
             const { content, targetUserId } = data;
-            
+
             // Input validation
             if (!content || !content.trim()) {
                 return socket.emit('error', { message: 'Message cannot be empty' });
             }
-            
+
             if (content.length > 500) {
                 return socket.emit('error', { message: 'Message too long (max 500 characters)' });
             }
-            
+
             // Check if user is authenticated (not anonymous)
             if (socket.userId === 'anonymous' || socket.role === 'guest') {
                 console.log(' Unauthenticated user tried to send message');
                 return socket.emit('error', { message: 'Please login to send messages' });
             }
-            
+
             // Authorization checks for users
             if (socket.role === 'user' && targetUserId !== 'admin') {
                 console.log(' User tried to send to non-admin:', targetUserId);
                 return socket.emit('error', { message: 'Unauthorized' });
             }
-            
+
             // Save message to database
             const chatServices = require('./services/chatServices');
             let result;
-            
+
             if (socket.role === 'admin') {
                 // Admin sending to user
-                console.log(`Admin ${socket.userId} → User ${targetUserId}`);
+                console.log(`👑 Admin ${socket.userId} → User ${targetUserId}`);
                 result = await chatServices.sendAdminMessage(socket.userId, targetUserId, content);
             } else {
                 // User sending to admin
-                console.log(`User ${socket.userId} → Admin`);
+                console.log(`👤 User ${socket.userId} → Admin`);
                 result = await chatServices.sendMessage(socket.userId, content);
             }
-            
+
             if (!result.success) {
                 console.error(' Database error:', result.error);
                 return socket.emit('error', { message: result.error });
             }
-            
+
             const message = result.message;
-            console.log(' Message saved to DB:', message.id);
-            
+
             // Prepare message data
             const messageData = {
                 id: message.id,
@@ -308,46 +308,56 @@ io.on('connection', (socket) => {
                 created_at: message.created_at,
                 is_read: false
             };
-            
+
             // Emit to recipients
             if (socket.role === 'admin') {
                 // Admin -> User
                 io.to(`user:${targetUserId}`).emit('new-message', messageData);
                 // Admin sees their own message
                 socket.emit('new-message', { ...messageData, username: 'You' });
+
+                // Update admin inbox
+                updateAdminInboxForNewMessage(messageData, true);
                 
-                console.log(`Socket emitted: Admin → User ${targetUserId}`);
+                console.log(`📤 Admin → User ${targetUserId}`);
             } else {
                 // User -> Admin
-                io.to('admin-room').emit('new-message', {
+                io.to('admin-room').emit('new-user-message', {
                     ...messageData,
                     username: socket.username
                 });
                 // User sees their own message
                 socket.emit('new-message', { ...messageData, username: 'You' });
+
+                // Update admin inbox
+                updateAdminInboxForNewMessage(messageData, false);
                 
-                console.log(`Socket emitted: User ${socket.username} → Admin`);
+                console.log(`📤 User ${socket.username} → Admin`);
             }
-            
+
         } catch (error) {
             console.error(' Message send error:', error);
             socket.emit('error', { message: 'Failed to send message: ' + error.message });
         }
     });
-    
+
+    // ===== ADMIN INBOX REQUESTS =====
+    socket.on('admin-get-conversations', async () => {
+        if (socket.role === 'admin') {
+            await sendAdminConversations(socket);
+        }
+    });
+
     // ===== TYPING INDICATOR =====
     socket.on('typing', (data) => {
-        // console.log('TYPING EVENT - From:', socket.userId, 'Role:', socket.role, 'Data:', data);
-        
         const { targetUserId, isTyping, userId } = data;
-        
-        // Determine who is typing (use provided userId or socket userId)
+
+        // Determine who is typing
         const typingUserId = userId || socket.userId;
         const typingUsername = socket.role === 'admin' ? 'Admin' : socket.username;
-        
+
         if (socket.role === 'admin' && targetUserId) {
             // Admin typing to user
-            // console.log(`Admin ${socket.userId} typing to user ${targetUserId}: ${isTyping}`);
             io.to(`user:${targetUserId}`).emit('typing', {
                 userId: 'admin',
                 targetUserId: targetUserId,
@@ -356,7 +366,6 @@ io.on('connection', (socket) => {
             });
         } else if (socket.role === 'user') {
             // User typing to admin
-            // console.log(`👤 User ${socket.userId} typing to admin: ${isTyping}`);
             io.to('admin-room').emit('typing', {
                 userId: socket.userId,
                 targetUserId: 'admin',
@@ -364,36 +373,33 @@ io.on('connection', (socket) => {
                 username: socket.username
             });
         }
-        
-        // Debug: log all rooms
-        // console.log('Active rooms:', Array.from(socket.rooms));
     });
-        
+
     // ===== MARK AS READ =====
     socket.on('mark-as-read', async (data) => {
         try {
             const { messageId } = data;
-            
+
             // Only admin can mark messages as read
             if (socket.role !== 'admin') {
                 return socket.emit('error', { message: 'Unauthorized' });
             }
-            
+
             // Update in database
             const chatServices = require('./services/chatServices');
             await chatServices.markMessageAsRead(messageId);
-            
+
             // Notify sender that their message was read
             socket.emit('message-read', { messageId });
-            
+
             console.log(`✓ Message ${messageId} marked as read by admin ${socket.username}`);
-            
+
         } catch (error) {
             console.error('Mark as read error:', error);
             socket.emit('error', { message: 'Failed to mark as read' });
         }
     });
-    
+
     // ===== ONLINE STATUS =====
     socket.on('set-online-status', (status) => {
         if (socket.role === 'user') {
@@ -409,11 +415,11 @@ io.on('connection', (socket) => {
             });
         }
     });
-    
+
     // ===== DISCONNECTION =====
     socket.on('disconnect', () => {
         console.log(` ${socket.username} disconnected`);
-        
+
         // Notify others
         if (socket.role === 'user') {
             io.to('admin-room').emit('user-status', {
@@ -428,74 +434,61 @@ io.on('connection', (socket) => {
             });
         }
     });
-    
+
     // ===== ERROR HANDLING =====
     socket.on('error', (error) => {
         console.error(`Socket ${socket.id} error:`, error);
     });
 });
 
-// ===== ROUTES =====
-app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
-        environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
-});
+// ===== HELPER FUNCTIONS =====
 
-// Debug endpoint
-app.get('/debug', (req, res) => {
-    res.json({
-        environment: process.env.NODE_ENV,
-        sessionId: req.sessionID,
-        userId: req.user?.id,
-        username: req.user?.username,
-        isAuthenticated: req.isAuthenticated(),
-        cookies: req.headers.cookie,
-        nodeEnv: process.env.NODE_ENV
-    });
-});
+// Send conversations to admin
+async function sendAdminConversations(socket) {
+    try {
+        const chatServices = require('./services/chatServices');
+        const result = await chatServices.getAdminConversations();
 
-// Test Socket.IO endpoint
-app.get('/test-socket', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Socket.IO Test</title>
-            <script src="/socket.io/socket.io.js"></script>
-        </head>
-        <body>
-            <h1>Socket.IO Test Page</h1>
-            <div id="status">Connecting...</div>
-            <script>
-                const socket = io({
-                    withCredentials: true,
-                    transports: ['websocket', 'polling']
-                });
-                
-                socket.on('connect', () => {
-                    document.getElementById('status').innerHTML = 'Connected!';
-                    console.log('Socket connected:', socket.id);
-                });
-                
-                socket.on('connected', (data) => {
-                    console.log('Connected event:', data);
-                    document.getElementById('status').innerHTML = 
-                        'Connected as: ' + data.username + ' (' + data.userId + ')';
-                });
-                
-                socket.on('error', (error) => {
-                    console.error('Socket error:', error);
-                    document.getElementById('status').innerHTML = 'Error: ' + error.message;
-                });
-            </script>
-        </body>
-        </html>
-    `);
-});
+        socket.emit('conversations-list', {
+            success: true,
+            conversations: result.messages || []
+        });
+    } catch (error) {
+        console.error('Error sending conversations to admin:', error);
+        socket.emit('conversations-list', {
+            success: false,
+            error: 'Failed to load conversations'
+        });
+    }
+}
+
+// Update admin inbox when new message arrives
+async function updateAdminInboxForNewMessage(messageData, isFromAdmin) {
+    try {
+        const chatServices = require('./services/chatServices');
+        
+        // Get updated conversation data
+        const conversationUpdate = {
+            user_id: messageData.user_id,
+            username: messageData.username || 'Anonymous User',
+            last_message: messageData.content,
+            last_message_at: messageData.created_at,
+            unread_count: isFromAdmin ? 0 : 1 // If admin sent, no unread count
+        };
+
+        // Send to all admins
+        io.to('admin-room').emit('conversation-updated', conversationUpdate);
+        
+        console.log(`📬 Updated admin inbox for user ${messageData.user_id}`);
+    } catch (error) {
+        console.error('Error updating admin inbox:', error);
+    }
+}
+
+// Broadcast to all admin sockets
+function broadcastToAdmins(event, data) {
+    io.to('admin-room').emit(event, data);
+}
 
 const web = require('./router/web');
 const api = require('./router/api');
@@ -508,14 +501,14 @@ app.get('/chat/api/messages', async (req, res) => {
     try {
         const lastUpdate = req.query.lastUpdate;
         const userId = req.user?.id;
-        
+
         if (!userId) {
             return res.json({ messages: [] });
         }
-        
+
         const chatServices = require('./services/chatServices');
         const result = await chatServices.getNewMessages(lastUpdate);
-        
+
         if (result.success) {
             res.json({ messages: result.messages || [] });
         } else {

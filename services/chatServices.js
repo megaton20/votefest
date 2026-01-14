@@ -245,6 +245,94 @@ static async getConversation(userId) {
       };
   }
 }
+
+
+// Add these methods to your existing chatServices.js
+
+static async getAdminConversations(){
+  try {
+    const messages = await Message.getAdminConversations();
+    
+    return {
+      status: true,
+      messages: messages || []
+    };
+  } catch (error) {
+    console.error('conversation service error:', error);
+    return {
+      success: false,
+      error: 'Failed to load conversation',
+      statusCode: 500
+      };
+  }
+}
+
+static async getConversationUpdate(messageData) {
+    try {
+        const pool = require('../config/db');
+        // Get user info and message count
+        const query = `
+            SELECT 
+                u.id as user_id,
+                u.username,
+                COUNT(m.id) as message_count,
+                SUM(CASE WHEN m.is_read = false AND m.is_from_admin = false THEN 1 ELSE 0 END) as unread_count,
+                MAX(m.created_at) as last_message_at,
+                (
+                    SELECT content 
+                    FROM messages m2 
+                    WHERE m2.user_id = u.id 
+                    ORDER BY m2.created_at DESC 
+                    LIMIT 1
+                ) as last_message
+            FROM users u
+            LEFT JOIN messages m ON m.user_id = u.id
+            WHERE u.id = $1
+            GROUP BY u.id, u.username
+        `;
+        
+        const result = await pool.query(query, [messageData.user_id]);
+        
+        if (result.rows.length === 0) {
+            // Return basic conversation data if user not found
+            return {
+                user_id: messageData.user_id,
+                username: messageData.username || 'Anonymous User',
+                last_message: messageData.content,
+                last_message_at: messageData.created_at,
+                unread_count: messageData.is_from_admin ? 0 : 1,
+                message_count: 1
+            };
+        }
+        
+        const row = result.rows[0];
+
+        console.log(row);
+        
+        return {
+            user_id: row.user_id,
+            username: row.username || 'Anonymous User',
+            last_message: messageData.content,
+            last_message_at: messageData.created_at,
+            unread_count: messageData.is_from_admin ? 0 : (row.unread_count || 1),
+            message_count: row.message_count || 1
+        };
+    } catch (error) {
+        console.error('Error getting conversation update:', error);
+        // Return basic data if query fails
+        return {
+            user_id: messageData.user_id,
+            username: messageData.username || 'Anonymous User',
+            last_message: messageData.content,
+            last_message_at: messageData.created_at,
+            unread_count: messageData.is_from_admin ? 0 : 1,
+            message_count: 1
+        };
+    }
+}
+
+
+
 }
 
 module.exports = chatServices;

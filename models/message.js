@@ -59,7 +59,7 @@ static async getConversation(userId) {
       SELECT 
         m.*,
         CASE 
-          WHEN m.is_from_admin = true THEN 'Admin'
+          WHEN m.is_from_admin = true THEN 'admin'
           ELSE COALESCE(u.username, 'You')
         END as username
         FROM messages m
@@ -75,7 +75,6 @@ static async getConversation(userId) {
 }
 
 
-  // Get all users who have sent messages (for admin inbox)
   static async getConversations() {
     try {
       const res = await pool.query(`
@@ -391,6 +390,119 @@ static async createSecureAdminMessage(adminUserId, targetUserId, content) {
     throw error;
   }
 }
+
+
+// Get conversations for admin inbox
+   static async  getAdminConversations(lastUpdate = null) {
+        try {
+          
+            
+            let query = `
+                SELECT 
+                    u.id as user_id,
+                    u.username,
+                    u.created_at as user_created_at,
+                    COUNT(m.id) as message_count,
+                    SUM(CASE WHEN m.is_read = false AND m.is_from_admin = false THEN 1 ELSE 0 END) as unread_count,
+                    MAX(m.created_at) as last_message_at,
+                    (
+                        SELECT content 
+                        FROM messages m2 
+                        WHERE m2.user_id = u.id 
+                        ORDER BY m2.created_at DESC 
+                        LIMIT 1
+                    ) as last_message
+                FROM users u
+                LEFT JOIN messages m ON m.user_id = u.id
+                WHERE u.role = 'user'
+                GROUP BY u.id, u.username, u.created_at
+                HAVING COUNT(m.id) > 0
+            `;
+            
+            const params = [];
+            
+            if (lastUpdate) {
+                query += ` AND MAX(m.created_at) > $1`;
+                params.push(lastUpdate);
+            }
+            
+            query += ` ORDER BY MAX(m.created_at) DESC`;
+            
+            const result = await pool.query(query, params);
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting admin conversations:', error);
+            return [];
+        }
+    }
+
+    // Get conversation update for a specific message
+   static async  getConversationUpdate(messageData) {
+        try {
+            
+            const query = `
+                SELECT 
+                    u.id as user_id,
+                    u.username,
+                    COUNT(m.id) as message_count,
+                    SUM(CASE WHEN m.is_read = false AND m.is_from_admin = false THEN 1 ELSE 0 END) as unread_count,
+                    MAX(m.created_at) as last_message_at,
+                    (
+                        SELECT content 
+                        FROM messages m2 
+                        WHERE m2.user_id = u.id 
+                        ORDER BY m2.created_at DESC 
+                        LIMIT 1
+                    ) as last_message
+                FROM users u
+                LEFT JOIN messages m ON m.user_id = u.id
+                WHERE u.id = $1
+                GROUP BY u.id, u.username
+            `;
+            
+            const result = await pool.query(query, [messageData.user_id]);
+            
+            if (result.rows.length === 0) {
+                return null;
+            }
+            
+            return {
+                user_id: messageData.user_id,
+                username: result.rows[0].username || 'Anonymous',
+                last_message: messageData.content,
+                last_message_at: messageData.created_at,
+                unread_count: messageData.is_from_admin ? 0 : (result.rows[0].unread_count || 1),
+                message_count: result.rows[0].message_count || 1
+            };
+        } catch (error) {
+            console.error('Error getting conversation update:', error);
+            return null;
+        }
+    }
+
+    // Mark all messages from a user as read
+   static async  markAllMessagesAsRead(userId) {
+        try {
+            
+            const query = `
+                UPDATE messages 
+                SET is_read = true, 
+                    read_at = CURRENT_TIMESTAMP 
+                WHERE user_id = $1 
+                AND is_from_admin = false 
+                AND is_read = false
+                RETURNING id
+            `;
+            
+            const result = await pool.query(query, [userId]);
+            return { success: true, count: result.rowCount };
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+
 
 
 }
