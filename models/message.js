@@ -61,9 +61,8 @@ static async getConversation(userId) {
         CASE 
           WHEN m.is_from_admin = true THEN 'Admin'
           ELSE COALESCE(u.username, 'You')
-        END as username,
-        u.email
-      FROM messages m
+        END as username
+        FROM messages m
       LEFT JOIN users u ON m.user_id = u.id
       WHERE m.user_id = $1
       ORDER BY m.created_at ASC
@@ -83,7 +82,7 @@ static async getConversation(userId) {
         SELECT 
           u.id as user_id,
           u.username,
-          u.email,
+         
           u.created_at as user_created_at,
           COUNT(m.id) as message_count,
           SUM(CASE WHEN m.is_read = false THEN 1 ELSE 0 END) as unread_count,
@@ -98,7 +97,7 @@ static async getConversation(userId) {
         FROM users u
         JOIN messages m ON u.id = m.user_id
         WHERE m.status = 'pending'
-        GROUP BY u.id, u.username, u.email, u.created_at
+        GROUP BY u.id, u.username, u.created_at
         ORDER BY last_message_at DESC
       `);
       return res.rows;
@@ -114,8 +113,7 @@ static async getConversation(userId) {
       const res = await pool.query(`
         SELECT 
           m.*,
-          COALESCE(u.username, 'Anonymous') as username,
-          u.email
+          COALESCE(u.username, 'Anonymous') as username
         FROM messages m
         LEFT JOIN users u ON m.user_id = u.id
         WHERE m.user_id = $1 AND m.status = 'pending'

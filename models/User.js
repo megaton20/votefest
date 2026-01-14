@@ -7,15 +7,13 @@ class User {
     const createQuery = `
      CREATE TABLE users (
     id VARCHAR PRIMARY KEY,
-    username TEXT,
-    email TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
 
     token_expires TIMESTAMP,
     token VARCHAR,
 
     role TEXT DEFAULT 'user',
-    is_email_verified BOOLEAN DEFAULT FALSE,
 
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -26,14 +24,14 @@ class User {
 
   }
 
-  static async create({id, username, email, passwordHash}) {
+  static async create({id, username, passwordHash}) {
 
     try {
       const result = await pool.query(`
-      INSERT INTO users (username, email, password_hash, id )
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO users (username, password_hash, id )
+      VALUES ($1, $2, $3)
       RETURNING *;
-    `, [username, email, passwordHash, id]);
+    `, [username, passwordHash, id]);
 
       return result.rows[0];
     } catch (error) {
@@ -72,15 +70,15 @@ static async getAdmin() {
   }
 }
 
-  static async findByEmail(email) {
+  static async findByUsername(username) {
     try {
       const { rows } = await pool.query(
-        `SELECT * FROM users WHERE email = $1 LIMIT 1`,
-        [email]
+        `SELECT * FROM users WHERE username = $1 LIMIT 1`,
+        [username]
       );
       return rows[0] || null;
     } catch (error) {
-      console.error('Error in findByEmail:', error);
+      console.error('Error in findByUsername:', error);
       return null;
     }
   }
@@ -105,15 +103,7 @@ static async getAdmin() {
     }
   }
 
-  static async lisAllVerified() {
-    try {
-      const {rows:res} = await pool.query(`SELECT * FROM users WHERE is_email_verified = TRUE`);
-      return res;
-    } catch (error) {
-      console.log(`error getting user: ${error.message}`);
 
-    }
-  }
 
   static async deleteUser(id){
     const result = await pool.query(`

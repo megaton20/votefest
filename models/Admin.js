@@ -7,8 +7,8 @@ class Admin extends User {
   static async stats() {
     try {
       const totalUsersRes = await pool.query(
-        'SELECT COUNT(*) FROM users WHERE role = $1 AND is_email_verified = $2',
-        ['user', true]
+        'SELECT COUNT(*) FROM users WHERE role = $1',
+        ['user']
       );
   
 

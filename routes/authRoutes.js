@@ -1,8 +1,6 @@
 const router = require('express').Router();
 const authController = require('../controllers/authController');
-const { ensureAuthenticated,forwardAuthenticated } = require("../config/auth");
-
-const {forwardVerifyAlert} = require('../middleware/auth');
+const { forwardAuthenticated } = require("../config/auth");
 
 
 router.get('/register',forwardAuthenticated,  authController.registerPage);

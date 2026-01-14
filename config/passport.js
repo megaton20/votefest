@@ -31,11 +31,11 @@ passport.deserializeUser(async (id, done) => {
 
 
 // Local strategy for traditional login
-passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+passport.use(new LocalStrategy({ usernameField: 'username' }, async (username, password, done) => {
   try {    
     
-    // Query the database for a user with the provided email
-    const user = await User.findByEmail(email);
+    // Query the database for a user with the provided username
+    const user = await User.findByUsername(username);
 
     // Check if any user was found
     if (!user) {
@@ -51,7 +51,7 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     // Compare the provided password with the hashed password in the database
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return done(null, false, { message: 'Incorrect email or password' });
+      return done(null, false, { message: 'Incorrect username or password' });
     }
 
     // If everything is okay, return the user object

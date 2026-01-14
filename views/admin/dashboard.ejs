@@ -156,7 +156,6 @@
                                 </div>
                                 <div class="user-details">
                                     <h4 class="user-name"><%= user.username || 'Anonymous User' %></h4>
-                                    <p class="user-email"><%= user.email || 'No email' %></p>
                                     <div class="user-meta">
                                         <span class="user-joined">
                                             Joined <%= new Date(user.created_at).toLocaleDateString() %>
@@ -595,7 +594,7 @@
     margin: 0 0 5px 0;
 }
 
-.user-email {
+.user-username {
     font-size: 0.85rem;
     color: var(--text-muted);
     margin: 0 0 10px 0;

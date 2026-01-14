@@ -2,21 +2,6 @@
 
 
 module.exports = {
-  forwardVerifyAlert: function (req, res, next) {
-
-    if (req.user.is_email_verified) {
-      return res.redirect('/handler')
-    }
-    return next()
-  },
-
-  ensureVerifiedEmail: function (req, res, next) {
-
-    if (req.user.is_email_verified) {
-      return next()
-    }
-    return res.redirect('/auth/verify-alert')
-  },
 
   ensureAdmin: function (req, res, next) {
 

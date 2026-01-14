@@ -128,10 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         conversationItems.forEach(item => {
             const name = item.querySelector('.conversation-name').textContent.toLowerCase();
-            const email = item.querySelector('.conversation-email')?.textContent.toLowerCase() || '';
             const message = item.querySelector('.conversation-message').textContent.toLowerCase();
             
-            if (name.includes(searchTerm) || email.includes(searchTerm) || message.includes(searchTerm)) {
+            if (name.includes(searchTerm) || message.includes(searchTerm)) {
                 item.style.display = 'flex';
             } else {
                 item.style.display = 'none';
@@ -421,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
     gap: 8px;
 }
 
-.conversation-email {
+.conversation-username {
     font-size: 0.8rem;
     color: var(--text-muted);
     font-weight: 400;
@@ -585,7 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
         gap: 2px;
     }
     
-    .conversation-email {
+    .conversation-username {
         font-size: 0.7rem;
     }
     

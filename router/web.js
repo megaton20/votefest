@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const {ensureVerifiedEmail} = require('../middleware/auth')
 const { ensureAuthenticated } = require("../config/auth");
 
 

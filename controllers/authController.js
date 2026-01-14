@@ -1,8 +1,5 @@
-// auth controller
 const jwt = require('jsonwebtoken');
 const AuthServices = require('../services/authServices');
-
-const baseUrl = process.env.LIVE_DIRR || `http://localhost:${process.env.PORT}`;
 
 // ==================== PAGE RENDERING ====================
 exports.registerPage = async (req, res) => {
@@ -58,7 +55,7 @@ exports.userCreate = async (req, res, next) => {
 
     if (req.isAPI) {
       const token = jwt.sign(
-        { userId: user.id, email: user.email },
+        { userId: user.id, username: user.username },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
@@ -68,8 +65,7 @@ exports.userCreate = async (req, res, next) => {
         data: {
           user: {
             id: user.id,
-            email: user.email,
-            fullName: user.fullName,
+            username: user.username,
           },
           token
         }
@@ -105,20 +101,20 @@ exports.userCreate = async (req, res, next) => {
 // ==================== LOGIN ====================
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
     
-    if (!email || !password) {
+    if (!username || !password) {
       if (req.isAPI) {
         return res.status(400).json({
           success: false,
-          error: 'Email and password are required'
+          error: 'username and password are required'
         });
       }
-      req.flash('error_msg', 'Email and password are required');
+      req.flash('error_msg', 'username and password are required');
       return res.redirect('/auth/login');
     }
     
-    const result = await AuthServices.login({ email, password }, req);
+    const result = await AuthServices.login({ username, password }, req);
         
     if (req.isAPI) {
       return res.json({
@@ -140,11 +136,11 @@ exports.login = async (req, res, next) => {
     if (req.isAPI) {
       return res.status(401).json({
         success: false,
-        error: error.message || 'Invalid email or password'
+        error: error.message || 'Invalid username or password'
       });
     }
     
-    req.flash('error_msg', error.message || 'Invalid email or password');
+    req.flash('error_msg', error.message || 'Invalid username or password');
     return res.redirect('/auth/login');
   }
 };

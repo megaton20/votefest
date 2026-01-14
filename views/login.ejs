@@ -5,11 +5,12 @@
     <!-- Login Form -->
     <section class="container form-container">
         <a href="/"><img src="/img/logo-2.PNG" alt=""></a>
+
         <p class="form-subtitle">No profiles. Just anonymity.</p>
         
         <form id="login-form" action="/auth/login" method="post">
             <div class="form-group">
-                <input type="email" name="email" id="login-email" class="form-input" placeholder="Enter email to start anonymously" required>
+                <input type="username" name="username" id="login-username" class="form-input" placeholder="Enter username to start anonymously" required>
             </div>
             
               <div class="form-group">
@@ -20,8 +21,9 @@
                 <button type="submit" class="cta-button" style="width: 100%;">Continue Anonymously</button>
             </div>
         </form>
+        <%-include('./partials/messages')%>
         
-        <p class="form-note">We only ask for email to prevent spam. We never store personal data or link messages to emails. <a href="#" onclick="alert('Your email is only used to generate a secure anonymous session. We do not store emails or associate them with your messages. All data is encrypted and ephemeral.');">Learn more</a></p>
+        <p class="form-note">We never store personal data or passwords. <a href="#" onclick="alert('On a secure anonymous session. We do not store messages. All data is encrypted and ephemeral.');">Learn more</a></p>
         
         <p class="form-note" style="margin-top: 10px;">
             New to Unsaid? <a href="/auth/register">Create anonymous account</a>
