@@ -66,7 +66,7 @@ const sessionMiddleware = session({
         httpOnly: true,
         secure: isProduction, // Only send cookie over HTTPS in production
         sameSite: isProduction ? 'none' : 'lax',
-        domain: isProduction ? process.env.DOMAIN || 'votefest.onrender.com' : undefined
+       
     },
     name: 'votefest.sid',
     proxy: isProduction
