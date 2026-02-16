@@ -36,7 +36,6 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     
     // Query the database for a user with the provided username
     const user = await User.findByEmail(email);
-    console.log(user);
     
     // Check if any user was found
     if (!user) {
