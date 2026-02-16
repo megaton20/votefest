@@ -38,18 +38,37 @@ app.use(express.urlencoded({ extended: true }));
 const isProduction = process.env.NODE_ENV === 'production';
 console.log(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 
-const sessionMiddleware = session({
 
+// Session store configuration
+let sessionStore;
+if (isProduction && process.env.DATABASE_URL) {
+    // Use PostgreSQL store in production
+    sessionStore = new pgSession({
+        pool: pool,
+        tableName: 'user_sessions',
+        createTableIfMissing: true
+    });
+    console.log('Using PostgreSQL session store');
+} else {
+    // Use MemoryStore in development
+    sessionStore = new session.MemoryStore();
+    console.log('Using Memory session store (development only)');
+}
+
+const sessionMiddleware = session({
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: isProduction,
+        secure: isProduction, // Only send cookie over HTTPS in production
         sameSite: isProduction ? 'none' : 'lax',
+        domain: isProduction ? process.env.DOMAIN || 'votefest.onrender.com' : undefined
     },
-    store: new session.MemoryStore()
+    name: 'votefest.sid',
+    proxy: isProduction
 });
 
 app.use(sessionMiddleware);
