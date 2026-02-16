@@ -7,6 +7,7 @@ if (process.env.NODE_ENV !== 'production') {
 const express = require('express');
 const app = express();
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const bodyParser = require('body-parser');
 const ejsLayouts = require('express-ejs-layouts');
 const flash = require('connect-flash');
