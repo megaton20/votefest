@@ -1,34 +1,32 @@
-  <div class="container-fluid vh-100">
-    <div class="row h-100">
-
-      <!-- Left Column -->
-      <div class="col-md-6 d-flex align-items-center justify-content-center bg-white shadow">
-        <div class="w-100 px-4" style="max-width: 450px;">
-          <div class="text-center mb-4">
-            <a href="/"><img src="/images/logo.png" alt="Logo" class="img-fluid mb-3" style="max-height: 60px;" /></a>
-            <!-- use a check image -->
-             <img src="./images/cheked.png" alt="">
-           <h1>404: not found</h1>
-          </div>
-
-
-          <div class="d-grid mt-4 mb-3">
-            <a href="/" class="btn btn-success">Go Home</a>
-          </div>
-
-          
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - VoteFest</title>
+    <link href="/css/output.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div class="min-h-screen flex items-center justify-center px-4">
+        <div class="max-w-lg w-full text-center">
+            <div class="mb-8">
+                <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h1>
+                <p class="text-gray-600 mb-6"><%= error || 'An unexpected error occurred' %></p>
+                <div class="space-x-4">
+                    <a href="/" class="inline-block px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
+                        Go Home
+                    </a>
+                    <button onclick="window.history.back()" class="inline-block px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
+                        Go Back
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <!-- Right Column (Quote) -->
-      <div class="col-md-6 d-none d-md-flex align-items-center justify-content-center bg-grad text-white p-5">
-        <div class="text-center">
-          <blockquote class="blockquote">
-            <p>"Success is not final, failure is not fatal: It is the courage to continue that counts."</p>
-          </blockquote>
-          <footer class="blockquote-footer text-white-50 mt-3">— Winston Churchill</footer>
-        </div>
-      </div>
-
     </div>
-  </div>
+</body>
+</html>

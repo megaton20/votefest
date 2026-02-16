@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const AuthServices = require('../services/authServices');
 
-// ==================== PAGE RENDERING ====================
+
 exports.registerPage = async (req, res) => {
   const { userActive, referrerCode } = await AuthServices.registerPage(req);
 
@@ -35,19 +35,20 @@ exports.loginPage = async (req, res) => {
 
 // ==================== USER REGISTRATION ====================
 exports.userCreate = async (req, res, next) => {
+  
   try {
     const result = await AuthServices.createUser(req.body);
 
     if (!result.success) {
       // For web - set flash message and redirect
       if (!req.isAPI) {
-        req.flash('error_msg', result.error);
+        req.flash('error_msg', result.message);
         return res.redirect('/auth/register');
       }
       // For API - return JSON
       return res.status(result.statusCode || 400).json({
         success: false,
-        error: result.error
+        message: result.message
       });
     }
 
@@ -78,7 +79,7 @@ exports.userCreate = async (req, res, next) => {
           return res.redirect('/auth/register');
         }
 
-        req.flash('success_msg', 'Registration successful! Welcome to True Series Academy.');
+        req.flash('success_msg', 'Registration successful!');
         return res.redirect('/handler');
       });
     }
@@ -101,20 +102,20 @@ exports.userCreate = async (req, res, next) => {
 // ==================== LOGIN ====================
 exports.login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
-    if (!username || !password) {
+    if (!email || !password) {
       if (req.isAPI) {
         return res.status(400).json({
           success: false,
-          error: 'username and password are required'
+          message: 'username and password are required'
         });
       }
       req.flash('error_msg', 'username and password are required');
       return res.redirect('/auth/login');
     }
     
-    const result = await AuthServices.login({ username, password }, req);
+    const result = await AuthServices.login({ email, password }, req);
         
     if (req.isAPI) {
       return res.json({

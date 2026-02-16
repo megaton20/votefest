@@ -9,7 +9,11 @@ const flash = require('connect-flash');
 const passport = require('passport');
 const path = require('path');
 const http = require('http');
-const socketIo = require('socket.io');
+const socketIO = require('socket.io');
+const SocketService = require('./services/SocketService');
+
+const server = http.createServer(app);
+const io = socketIO(server);
 
 const initAllModels = require('./initAllModels');
 initAllModels();
@@ -27,20 +31,18 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===== SESSION SETUP =====
-// Determine if we're in production or development
 const isProduction = process.env.NODE_ENV === 'production';
-console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 
 const sessionMiddleware = session({
+
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        // Secure cookies only in production (HTTPS)
         secure: isProduction,
-        // Use 'none' for cross-site in production, 'lax' for local
         sameSite: isProduction ? 'none' : 'lax',
     },
     store: new session.MemoryStore()
@@ -69,145 +71,20 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== SERVER & SOCKET.IO SETUP =====
-const server = http.createServer(app);
-
-// Configure CORS for Socket.IO
-let corsOptions;
-if (isProduction) {
-    // Production settings
-    const allowedOrigins = process.env.ALLOWED_ORIGINS ?
-        process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()) :
-        [];
-
-    console.log(' Production mode - Allowed origins:', allowedOrigins);
-
-    corsOptions = {
-        origin: function (origin, callback) {
-            // Allow requests with no origin (like mobile apps or curl requests)
-            if (!origin) {
-                console.log('⚠️ Request with no origin, allowing...');
-                return callback(null, true);
-            }
-
-            // Check if origin is in allowed list
-            if (allowedOrigins.length === 0) {
-                console.log('⚠️ No allowed origins configured, allowing all');
-                return callback(null, true);
-            }
-
-            if (allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-
-            console.error(` CORS blocked origin: ${origin}`);
-            return callback(new Error('Not allowed by CORS'), false);
-        },
-        methods: ['GET', 'POST'],
-        credentials: true
-    };
-} else {
-    // Development settings
-    console.log('🔧 Development mode - Allowing all origins');
-    corsOptions = {
-        origin: true, // Reflect the request origin
-        credentials: true,
-        methods: ['GET', 'POST']
-    };
-}
-
-const io = socketIo(server, {
-    cors: corsOptions,
-    transports: ['websocket', 'polling']
+// Make user available to all views
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  res.locals.currentPath = req.path;
+  next();
 });
 
 // ===== SOCKET.IO AUTHENTICATION =====
 io.use((socket, next) => {
-    console.log('🔍 Socket connection attempt from:', socket.handshake.headers.origin);
-
-    // Check if we have user data passed in auth (from frontend)
-    const authData = socket.handshake.auth;
-    if (authData && authData.userId && authData.userId !== '') {
-        console.log(` Using auth data: ${authData.username} (${authData.userId})`);
-        socket.userId = authData.userId;
-        socket.username = authData.username || 'User';
-        socket.role = authData.role || 'user';
-        return next();
-    }
-
-    // Try to get session from cookies
-    const cookies = socket.handshake.headers.cookie;
-    if (!cookies) {
-        console.log(' No cookies found - anonymous connection');
-        socket.userId = 'anonymous';
-        socket.username = 'Anonymous';
-        socket.role = 'guest';
-        return next();
-    }
-
-    const sessionCookie = cookies.match(/connect\.sid=([^;]+)/)?.[1];
-    if (!sessionCookie) {
-        console.log(' No session cookie found');
-        socket.userId = 'anonymous';
-        socket.username = 'Anonymous';
-        socket.role = 'guest';
-        return next();
-    }
-
-    console.log('🍪 Found session cookie, attempting authentication...');
-
-    // Use session middleware to restore session
-    sessionMiddleware(socket.request, {}, (err) => {
-        if (err) {
-            console.error('Session middleware error:', err);
-            socket.userId = 'anonymous';
-            socket.username = 'Anonymous';
-            socket.role = 'guest';
-            return next();
-        }
-
-        // Check if user is authenticated in session
-        if (socket.request.session && socket.request.session.passport) {
-            const userId = socket.request.session.passport.user;
-            console.log(' Found user ID in session:', userId);
-
-            const User = require('./models/User');
-            User.getById(userId)
-                .then(user => {
-                    if (user) {
-                        socket.userId = user.id;
-                        socket.username = user.username || 'Anonymous';
-                        socket.role = user.role || 'user';
-                        socket.user = user;
-                        console.log(` Socket authenticated: ${socket.username} (${user.id})`);
-                    } else {
-                        console.log(' User not found in database');
-                        socket.userId = 'anonymous';
-                        socket.username = 'Anonymous';
-                        socket.role = 'guest';
-                    }
-                    next();
-                })
-                .catch(err => {
-                    console.error('User fetch error:', err);
-                    socket.userId = 'anonymous';
-                    socket.username = 'Anonymous';
-                    socket.role = 'guest';
-                    next();
-                });
-        } else {
-            console.log(' No passport found in session');
-            socket.userId = 'anonymous';
-            socket.username = 'Anonymous';
-            socket.role = 'guest';
-            next();
-        }
-    });
+    sessionMiddleware(socket.request, {}, next);
 });
 
 // ===== SOCKET.IO EVENT HANDLERS =====
 io.on('connection', (socket) => {
-    console.log(`🔗 New connection: ${socket.username} (${socket.userId}, ${socket.role})`);
 
     // Join appropriate rooms
     if (socket.userId !== 'anonymous') {
@@ -215,14 +92,12 @@ io.on('connection', (socket) => {
 
         if (socket.role === 'admin') {
             socket.join('admin-room');
-            console.log(`👑 Admin joined admin-room: ${socket.username}`);
-
             // Broadcast admin online status
             socket.broadcast.emit('admin-status', {
                 status: 'online',
                 username: socket.username
             });
-            
+
             // Send initial conversations to admin
             sendAdminConversations(socket);
         } else {
@@ -278,16 +153,15 @@ io.on('connection', (socket) => {
             }
 
             // Save message to database
-            const chatServices = require('./services/chatServices');
             let result;
 
             if (socket.role === 'admin') {
                 // Admin sending to user
-                console.log(`👑 Admin ${socket.userId} → User ${targetUserId}`);
+                console.log(`Unsaid ${socket.userId} → User: ${targetUserId}`);
                 result = await chatServices.sendAdminMessage(socket.userId, targetUserId, content);
             } else {
                 // User sending to admin
-                console.log(`👤 User ${socket.userId} → Admin`);
+                console.log(`User ${socket.userId} → Unsaid`);
                 result = await chatServices.sendMessage(socket.userId, content);
             }
 
@@ -318,8 +192,8 @@ io.on('connection', (socket) => {
 
                 // Update admin inbox
                 updateAdminInboxForNewMessage(messageData, true);
-                
-                console.log(`📤 Admin → User ${targetUserId}`);
+
+                console.log(`Unsaid → User ${targetUserId}`);
             } else {
                 // User -> Admin
                 io.to('admin-room').emit('new-user-message', {
@@ -331,8 +205,8 @@ io.on('connection', (socket) => {
 
                 // Update admin inbox
                 updateAdminInboxForNewMessage(messageData, false);
-                
-                console.log(`📤 User ${socket.username} → Admin`);
+
+                console.log(`User ${socket.username} → Unsaid`);
             }
 
         } catch (error) {
@@ -352,9 +226,6 @@ io.on('connection', (socket) => {
     socket.on('typing', (data) => {
         const { targetUserId, isTyping, userId } = data;
 
-        // Determine who is typing
-        const typingUserId = userId || socket.userId;
-        const typingUsername = socket.role === 'admin' ? 'Admin' : socket.username;
 
         if (socket.role === 'admin' && targetUserId) {
             // Admin typing to user
@@ -441,88 +312,21 @@ io.on('connection', (socket) => {
     });
 });
 
-// ===== HELPER FUNCTIONS =====
+// Initialize Socket Service
+const socketService = new SocketService(io);
+app.locals.socketService = socketService;
 
-// Send conversations to admin
-async function sendAdminConversations(socket) {
-    try {
-        const chatServices = require('./services/chatServices');
-        const result = await chatServices.getAdminConversations();
-
-        socket.emit('conversations-list', {
-            success: true,
-            conversations: result.messages || []
-        });
-    } catch (error) {
-        console.error('Error sending conversations to admin:', error);
-        socket.emit('conversations-list', {
-            success: false,
-            error: 'Failed to load conversations'
-        });
-    }
-}
-
-// Update admin inbox when new message arrives
-async function updateAdminInboxForNewMessage(messageData, isFromAdmin) {
-    try {
-        const chatServices = require('./services/chatServices');
-        
-        // Get updated conversation data
-        const conversationUpdate = {
-            user_id: messageData.user_id,
-            username: messageData.username || 'Anonymous User',
-            last_message: messageData.content,
-            last_message_at: messageData.created_at,
-            unread_count: isFromAdmin ? 0 : 1 // If admin sent, no unread count
-        };
-
-        // Send to all admins
-        io.to('admin-room').emit('conversation-updated', conversationUpdate);
-        
-        console.log(`📬 Updated admin inbox for user ${messageData.user_id}`);
-    } catch (error) {
-        console.error('Error updating admin inbox:', error);
-    }
-}
-
-// Broadcast to all admin sockets
-function broadcastToAdmins(event, data) {
-    io.to('admin-room').emit(event, data);
-}
 
 const web = require('./router/web');
 const api = require('./router/api');
 
+
+
 app.use('/', web);
 app.use('/api', api);
 
-// Add API endpoint for polling fallback
-app.get('/chat/api/messages', async (req, res) => {
-    try {
-        const lastUpdate = req.query.lastUpdate;
-        const userId = req.user?.id;
-
-        if (!userId) {
-            return res.json({ messages: [] });
-        }
-
-        const chatServices = require('./services/chatServices');
-        const result = await chatServices.getNewMessages(lastUpdate);
-
-        if (result.success) {
-            res.json({ messages: result.messages || [] });
-        } else {
-            res.json({ messages: [] });
-        }
-    } catch (error) {
-        console.error('API messages error:', error);
-        res.json({ messages: [] });
-    }
-});
 
 
-
-// ===== ERROR HANDLING =====
 // 404 Handler
 app.use((req, res) => {
     let userActive = req.user ? true : false;
@@ -541,11 +345,6 @@ app.use((err, req, res, next) => {
 // ===== START SERVER =====
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Socket.IO ready`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Test Socket.IO: http://localhost:${PORT}/test-socket`);
-    console.log(`Health check: http://localhost:${PORT}/health`);
-    console.log(`Debug info: http://localhost:${PORT}/debug`);
 });
 
 // Graceful shutdown

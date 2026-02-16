@@ -1,0 +1,149 @@
+<%- include('./partials/navback') %>
+
+<main class="container mx-auto px-4 pt-20 pb-24">
+    <!-- Minimal Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-gray-800">Rankings</h1>
+            <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span class="text-xs text-gray-500">live</span>
+            </div>
+        </div>
+        <p class="text-sm text-gray-500 mt-1">Real-time contestant standings</p>
+    </div>
+
+    <!-- Leaderboard List - Minimal Design -->
+    <div class="space-y-3" id="leaderboard-table">
+        <% contestants.forEach((contestant, index) => { %>
+        <div class="leaderboard-row bg-white rounded-lg p-4 border border-gray-100 hover:border-purple-200 transition" 
+             data-contestant-id="<%= contestant.id %>">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <!-- Rank - Simple number -->
+                    <span class="w-6 text-sm font-medium <%= index < 3 ? 'text-purple-600' : 'text-gray-400' %>">
+                        #<%= index + 1 %>
+                    </span>
+                    
+                    <!-- Contestant Info -->
+                    <div>
+                        <h3 class="font-medium text-gray-800"><%= contestant.name %></h3>
+                        <p class="text-xs text-gray-400">#<%= contestant.contestant_number %></p>
+                    </div>
+                </div>
+                
+                <!-- Votes -->
+                <div class="text-right">
+                    <span class="font-semibold text-purple-600 vote-count-<%= contestant.id %>">
+                        <%= contestant.votes.toLocaleString() %>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Minimal Progress Bar -->
+            <div class="mt-2 w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-purple-500 rounded-full" 
+                     style="width: <%= (contestant.votes / (contestants[0]?.votes || 1) * 100) %>%"></div>
+            </div>
+        </div>
+        <% }) %>
+    </div>
+
+    <!-- Minimal Stats Bar -->
+    <div class="mt-6 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-4">
+        <div>
+            <span class="font-medium text-gray-700"><%= totalVotes.toLocaleString() %></span> total votes
+        </div>
+        <div>
+            <span class="font-medium text-gray-700"><%= contestants.length %></span> contestants
+        </div>
+        <div>
+            <span class="font-medium text-gray-700"><%= contestants[0]?.votes.toLocaleString() || 0 %></span> top
+        </div>
+    </div>
+</main>
+
+<%- include('./partials/navbottom') %>
+
+<script>
+// Socket.IO connection for real-time updates
+const socket = io();
+
+// Authenticate if user is logged in
+const userId = document.querySelector('meta[name="user-id"]')?.content;
+if (userId) {
+    socket.emit('authenticate', userId);
+}
+
+// Update leaderboard in real-time
+socket.on('leaderboard_update', (leaderboard) => {
+    console.log('📊 Leaderboard update received');
+    updateLeaderboardDisplay(leaderboard);
+});
+
+// Vote updates
+socket.on('vote_update', (data) => {
+    const { contestantId, newVotes } = data;
+    const voteElement = document.querySelector(`.vote-count-${contestantId}`);
+    if (voteElement) {
+        voteElement.textContent = newVotes.toLocaleString();
+    }
+    setTimeout(fetchLeaderboard, 1000);
+});
+
+// Update leaderboard display
+function updateLeaderboardDisplay(leaderboard) {
+    const tableBody = document.getElementById('leaderboard-table');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = leaderboard.map((contestant, index) => `
+        <div class="leaderboard-row bg-white rounded-lg p-4 border border-gray-100 hover:border-purple-200 transition" data-contestant-id="${contestant.id}">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="w-6 text-sm font-medium ${index < 3 ? 'text-purple-600' : 'text-gray-400'}">
+                        #${index + 1}
+                    </span>
+                    <div>
+                        <h3 class="font-medium text-gray-800">${contestant.name}</h3>
+                        <p class="text-xs text-gray-400">#${contestant.contestant_number}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="font-semibold text-purple-600 vote-count-${contestant.id}">${contestant.votes.toLocaleString()}</span>
+                </div>
+            </div>
+            <div class="mt-2 w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-purple-500 rounded-full" 
+                     style="width: ${(contestant.votes / (leaderboard[0]?.votes || 1) * 100)}%"></div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Update stats
+    const totalVotes = leaderboard.reduce((sum, c) => sum + c.votes, 0);
+    document.querySelector('.mt-6').innerHTML = `
+        <div class="mt-6 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-4">
+            <div><span class="font-medium text-gray-700">${totalVotes.toLocaleString()}</span> total votes</div>
+            <div><span class="font-medium text-gray-700">${leaderboard.length}</span> contestants</div>
+            <div><span class="font-medium text-gray-700">${leaderboard[0]?.votes.toLocaleString() || 0}</span> top</div>
+        </div>
+    `;
+}
+
+// Fetch leaderboard data
+async function fetchLeaderboard() {
+    try {
+        const response = await fetch('/vote/leaderboard');
+        const leaderboard = await response.json();
+        updateLeaderboardDisplay(leaderboard);
+    } catch (error) {
+        console.error('❌ Failed to fetch leaderboard:', error);
+    }
+}
+
+// Initial fetch
+document.addEventListener('DOMContentLoaded', fetchLeaderboard);
+
+// Refresh every 30 seconds
+setInterval(fetchLeaderboard, 30000);
+</script>

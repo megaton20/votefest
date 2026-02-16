@@ -1,15 +1,56 @@
-
+const Contestant = require("../models/Contestant");
+const Queries = require('../config/queries');
 
 class indexServices {
 
   static async landingPage(req) {
-    let userActive = false;
+    try {
+      let user = null
+      const contestants = await Contestant.findAll();    
 
-    if (req.user) {
-      userActive = true;
+      
+
+      if (req.user) {
+    
+        user = req.user
+      }
+      return {  contestants, user, success:true}
+    } catch (error) {
+      return { message: 'Error geting landing page', success:false }
 
     }
-    return { userActive }
+  }
+
+
+  static async viewContestantPage(id, req) {
+    try {
+ 
+      let user = null;
+
+      const contestant = await Contestant.findById(id);
+
+      
+      if (!contestant || contestant == null) {
+        return { user,success:false, message: 'Contestant not found' };
+      }
+      const contestants = await Contestant.findAll();
+      
+
+
+      if (req.user) {
+        user = req.user
+      }
+
+      return {
+        success:true,
+        user,
+        contestant,
+        contestants
+      }
+    } catch (error) {
+      return { message: 'Error geting single contestant', error }
+
+    }
   }
 
 

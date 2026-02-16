@@ -18,7 +18,7 @@ class AuthServices {
 
   // ==================== USER REGISTRATION ====================
   static async createUser(body) {
-    const { username, password } = body;
+    const { email, username, password } = body;
     
     try {
       // Validation
@@ -34,7 +34,15 @@ class AuthServices {
       if (existingUser) {
         return {
           success: false,
-          error: 'username is already taken',
+          message: 'username is already taken',
+          statusCode: 409
+        };
+      }
+      const existingEmail = await User.findByEmail(email);
+      if (existingEmail) {
+        return {
+          success: false,
+          message: 'email is already is registered already',
           statusCode: 409
         };
       }
@@ -44,7 +52,9 @@ class AuthServices {
       const user = await User.create({
         id: uuidv4(),
         username,
+        email,
         passwordHash: hashedPassword,
+        newWallet: uuidv4()
       });
 
 
@@ -64,14 +74,14 @@ class AuthServices {
   }
 
   // ==================== AUTHENTICATION ====================
-  static async authenticateLocal(username, password, req) {
+  static async authenticateLocal(email, password, req) {
     return new Promise((resolve, reject) => {
       passport.authenticate('local', (err, user, info) => {
         if (err) {
           return reject(err);
         }
         if (!user) {
-          const message = info?.message || 'Invalid username or password';
+          const message = info?.message || 'Invalid email or password';
           return reject(new Error(message));
         }
         resolve(user);
@@ -93,19 +103,15 @@ class AuthServices {
       }
 
       const token = jwt.sign(
-        { userId: user.id, username: user.username },
+        { userId: user.id, email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
 
-      await User.updateLastLogin(user.id);
+      
 
       return {
-        user: {
-          id: user.id,
-          username: user.username,
-          fullName: user.fullName,
-        },
+        user,
         token
       };
 
@@ -124,12 +130,14 @@ class AuthServices {
   }
 
   static async login(credentials, req) {
-    const { username, password } = credentials;
+    const { email, password } = credentials;
 
     if (req.isAPI) {
-      return await this.authenticateAPI(username, password);
+      return await this.authenticateAPI(email, password);
     } else {
-      const user = await this.authenticateLocal(username, password, req);
+      const user = await this.authenticateLocal(email, password, req);
+      // console.log(user);
+      
       await this.loginToSession(user, req);
       return { user };
     }

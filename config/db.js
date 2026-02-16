@@ -1,15 +1,20 @@
+const { Pool } = require('pg');
 
-const { Client } = require('pg');
-
-const client = new Client({
+const pool = new Pool({
   connectionString: process.env.NEON_KEY,
   ssl: {
     rejectUnauthorized: false,
   },
+  max: 20,
 });
 
-client.connect()
-  .then(() => console.log("Connected to Neon DB"))
-  .catch(err => console.error("DB connection error:", err.code));
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error("❌ Error acquiring client:", err.code);
+  }
+  console.log("Connected to Neon DB");
+  release();
+});
 
-module.exports = client;
+// Export the pool directly
+module.exports = pool;

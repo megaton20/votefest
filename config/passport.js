@@ -12,7 +12,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.getById(id);
+    const user = await User.findById(id);
 
     if (user.length === 0) {
       console.warn(`User with ID ${id} not found during deserialization.`);
@@ -31,22 +31,17 @@ passport.deserializeUser(async (id, done) => {
 
 
 // Local strategy for traditional login
-passport.use(new LocalStrategy({ usernameField: 'username' }, async (username, password, done) => {
+passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
   try {    
     
     // Query the database for a user with the provided username
-    const user = await User.findByUsername(username);
-
+    const user = await User.findByEmail(email);
+    
     // Check if any user was found
     if (!user) {
       return done(null, false, { message: 'User does not exist' });
     }
 
-
-    // Check if the user has a password set (indicating they did not sign up via Google)
-    if (!user.password_hash) {
-      return done(null, false, { message: 'Use Google to sign into that account' });
-    }
 
     // Compare the provided password with the hashed password in the database
     const isMatch = await bcrypt.compare(password, user.password_hash);
