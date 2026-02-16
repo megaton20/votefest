@@ -1,5 +1,8 @@
-require('dotenv').config();
-
+// Load dotenv only in development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+  console.log('📝 Loading environment variables from .env file (development mode)');
+}
 const express = require('express');
 const app = express();
 const session = require('express-session');
