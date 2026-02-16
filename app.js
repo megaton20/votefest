@@ -3,6 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
   console.log('📝 Loading environment variables from .env file (development mode)');
 }
+
 const express = require('express');
 const app = express();
 const session = require('express-session');
@@ -14,8 +15,6 @@ const path = require('path');
 const http = require('http');
 const socketIO = require('socket.io');
 const SocketService = require('./services/SocketService');
-const pgSession = require('connect-pg-simple')(session);
-const { pool } = require('./config/db'); // Make sure you have a pool export
 
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -39,49 +38,23 @@ app.use(express.urlencoded({ extended: true }));
 const isProduction = process.env.NODE_ENV === 'production';
 console.log(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 
-// Determine the trust proxy setting based on environment
-if (isProduction) {
-    // Render.com sits behind a proxy
-    app.set('trust proxy', 1);
-}
-
-// Session store configuration
-let sessionStore;
-if (isProduction && process.env.DATABASE_URL) {
-    // Use PostgreSQL store in production
-    sessionStore = new pgSession({
-        pool: pool,
-        tableName: 'user_sessions',
-        createTableIfMissing: true
-    });
-    console.log('Using PostgreSQL session store');
-} else {
-    // Use MemoryStore in development
-    sessionStore = new session.MemoryStore();
-    console.log('Using Memory session store (development only)');
-}
-
 const sessionMiddleware = session({
-    store: sessionStore,
+
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: isProduction, // Only send cookie over HTTPS in production
-        sameSite: isProduction ? 'none' : 'lax', // 'none' allows cross-site requests
-        domain: isProduction ? process.env.DOMAIN || '.onrender.com' : undefined // Set domain for production
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
     },
-    name: 'votefest.sid', // Custom session name to avoid default
-    proxy: isProduction // Trust the reverse proxy in production
+    store: new session.MemoryStore()
 });
 
 app.use(sessionMiddleware);
 
 app.use(flash());
-
-// ===== PASSPORT SETUP =====
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -114,15 +87,21 @@ io.use((socket, next) => {
     sessionMiddleware(socket.request, {}, next);
 });
 
+
 // Initialize Socket Service
 const socketService = new SocketService(io);
 app.locals.socketService = socketService;
 
+
 const web = require('./router/web');
 const api = require('./router/api');
 
+
+
 app.use('/', web);
 app.use('/api', api);
+
+
 
 // 404 Handler
 app.use((req, res) => {
@@ -135,15 +114,13 @@ app.use((req, res) => {
 
 // General error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Application Error:', err);
+    console.error(' Application Error:', err);
     res.redirect('/');
 });
 
 // ===== START SERVER =====
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-    console.log(`Session store: ${isProduction ? 'PostgreSQL' : 'Memory'}`);
 });
 
 // Graceful shutdown
