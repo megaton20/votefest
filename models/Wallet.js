@@ -191,21 +191,6 @@ class Wallet {
         ]
       );
       
-      await client.query(
-        `INSERT INTO transactions 
-         (id, reference, user_id, type, amount, sender_wallet, receiver_wallet, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          uuidv4(),
-          transactionRef,
-          receiverId,
-          'transfer',
-          amount,
-          senderWallet,
-          receiverWalletAccount,
-          'completed'
-        ]
-      );
       
       await client.query('COMMIT');
       

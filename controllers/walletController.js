@@ -149,7 +149,7 @@ class WalletController {
         
         this.socketService.sendToUser(receiverId, 'wallet_update', {
           newBalance: receiverBalance,
-          message: `Received ${amount} coins from ${req.session.user.walletAccount}`
+          message: `Received ${amount} coins from ${req.user.walletAccount}`
         });
       }
       

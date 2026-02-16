@@ -30,19 +30,68 @@ socket.on('vote_update', (data) => {
     console.log('📊 Vote update received:', data);
     const { contestantId, newVotes } = data;
     
-    // Update ALL vote count elements for this contestant
-    // This includes both the main vote count and any other displays
+    // Update vote count elements
     const voteElements = document.querySelectorAll(`.vote-count-${contestantId}`);
     voteElements.forEach(el => {
         el.textContent = newVotes.toLocaleString();
     });
     
-    // Also update any other places that might show vote counts
-    const voteDisplayElements = document.querySelectorAll(`[data-vote-count="${contestantId}"]`);
-    voteDisplayElements.forEach(el => {
-        el.textContent = newVotes.toLocaleString();
-    });
+    // Refresh the leaderboard display by fetching latest data
+    refreshLeaderboard();
 });
+
+// Refresh leaderboard by fetching from API
+async function refreshLeaderboard() {
+    try {
+        const response = await fetch('/vote/leaderboard');
+        const leaderboard = await response.json();
+        
+        if (leaderboard && leaderboard.length) {
+            updateLeaderboardDisplay(leaderboard);
+            updateTotalVotes(leaderboard);
+        }
+    } catch (error) {
+        console.error('Failed to refresh leaderboard:', error);
+    }
+}
+
+// Update the home page leaderboard with new rankings
+function updateLeaderboardDisplay(leaderboard) {
+    const leaderboardEl = document.getElementById('leaderboard');
+    if (!leaderboardEl) return;
+    
+    // Take top 5
+    const top5 = leaderboard.slice(0, 5);
+    
+    // Update the leaderboard HTML
+    leaderboardEl.innerHTML = top5.map((contestant, index) => `
+        <div class="flex items-center justify-between p-3 ${index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50' : 'hover:bg-gray-50'} rounded-lg transition mb-2">
+            <div class="flex items-center space-x-4">
+                <div class="w-8 h-8 flex items-center justify-center rounded-full 
+                    ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-300' : index === 2 ? 'bg-orange-300' : 'bg-gray-200'}">
+                    <span class="font-bold ${index < 3 ? 'text-white' : 'text-gray-700'}">${index + 1}</span>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-800">${contestant.name}</div>
+                    <div class="text-sm text-gray-600">#${contestant.contestant_number}</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="font-bold text-purple-700 vote-count-${contestant.id}">${contestant.votes.toLocaleString()}</div>
+                <div class="text-xs text-gray-500">votes</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Update total votes
+function updateTotalVotes(leaderboard) {
+    const totalVotesEl = document.getElementById('total-votes');
+    if (totalVotesEl) {
+        const total = leaderboard.reduce((sum, c) => sum + c.votes, 0);
+        totalVotesEl.textContent = total.toLocaleString();
+    }
+}
 
 // Wallet updates
 socket.on('wallet_update', (data) => {
@@ -54,6 +103,23 @@ socket.on('wallet_update', (data) => {
     
     // Recheck button states when wallet updates
     checkWalletBalance();
+});
+
+// Also listen for leaderboard updates from server
+socket.on('leaderboard_update', (leaderboard) => {
+    console.log('📊 Leaderboard update received');
+    if (leaderboard && leaderboard.length) {
+        updateLeaderboardDisplay(leaderboard);
+        updateTotalVotes(leaderboard);
+        
+        // Also update individual vote counts throughout the page
+        leaderboard.forEach(contestant => {
+            const voteElements = document.querySelectorAll(`.vote-count-${contestant.id}`);
+            voteElements.forEach(el => {
+                el.textContent = contestant.votes.toLocaleString();
+            });
+        });
+    }
 });
 
 // Adjust vote count with plus/minus
@@ -140,6 +206,9 @@ async function castVote(contestantId, count) {
             });
             
             showNotification(`✓ Voted ${count} time(s)!`, 'success');
+            
+            // Refresh leaderboard after vote
+            refreshLeaderboard();
         } else {
             if (data.error) {
                 showNotification(`❌ ${data.error}`, 'error');
@@ -236,19 +305,6 @@ function showNotification(message, type = 'info') {
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
-
-// Also listen for leaderboard updates which might contain vote changes
-socket.on('leaderboard_update', (leaderboard) => {
-    console.log('📊 Leaderboard update received');
-    if (leaderboard && leaderboard.length) {
-        leaderboard.forEach(contestant => {
-            const voteElement = document.querySelector(`.vote-count-${contestant.id}`);
-            if (voteElement) {
-                voteElement.textContent = contestant.votes.toLocaleString();
-            }
-        });
-    }
-});
 
 // Make functions global
 window.adjustVote = adjustVote;
