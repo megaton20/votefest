@@ -73,7 +73,7 @@ app.use((req, res, next) => {
 
 // Make user available to all views
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
+  res.locals.user = req.user || null;
   res.locals.currentPath = req.path;
   next();
 });

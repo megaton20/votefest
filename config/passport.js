@@ -36,6 +36,7 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     
     // Query the database for a user with the provided username
     const user = await User.findByEmail(email);
+    console.log(user);
     
     // Check if any user was found
     if (!user) {
@@ -46,7 +47,7 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, passwor
     // Compare the provided password with the hashed password in the database
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return done(null, false, { message: 'Incorrect username or password' });
+      return done(null, false, { message: 'Incorrect email or password' });
     }
 
     // If everything is okay, return the user object

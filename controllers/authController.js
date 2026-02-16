@@ -108,10 +108,10 @@ exports.login = async (req, res, next) => {
       if (req.isAPI) {
         return res.status(400).json({
           success: false,
-          message: 'username and password are required'
+          message: 'email and password are required'
         });
       }
-      req.flash('error_msg', 'username and password are required');
+      req.flash('error_msg', 'email and password are required');
       return res.redirect('/auth/login');
     }
     
@@ -137,11 +137,11 @@ exports.login = async (req, res, next) => {
     if (req.isAPI) {
       return res.status(401).json({
         success: false,
-        error: error.message || 'Invalid username or password'
+        error: error.message || 'Invalid email or password'
       });
     }
     
-    req.flash('error_msg', error.message || 'Invalid username or password');
+    req.flash('error_msg', error.message || 'Invalid email or password');
     return res.redirect('/auth/login');
   }
 };
