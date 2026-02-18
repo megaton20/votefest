@@ -14,7 +14,7 @@ class PaymentService {
           email,
           amount: amount * 100,
           metadata,
-          callback_url: `${process.env.CLIENT_URL}/payment/verify`
+          callback_url: `${process.env.CLIENT_URL}/tickets/verify`
         },
         {
           headers: {

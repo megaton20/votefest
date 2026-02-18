@@ -11,6 +11,13 @@ router.get('/users/:id',  adminController.findOneUsers);
 router.delete('/users/delete/:id',  adminController.deleteUser);
 
 
+router.get('/contenders',  adminController.getAllContenders);
+router.get('/contenders/:id',  adminController.findOneContender);
+// add
+// update                                   
+router.delete('/contenders/delete/:id',  adminController.deleteContender);
+
+
 
 
 module.exports = router;

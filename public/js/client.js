@@ -98,7 +98,7 @@ socket.on('wallet_update', (data) => {
     if (!isAuthenticated) return;
     const coinBalance = document.getElementById('coin-balance');
     if (coinBalance && data.newBalance !== undefined) {
-        coinBalance.textContent = data.newBalance;
+        coinBalance.textContent = data.newBalance.toLocaleString("en-US");
     }
     
     // Recheck button states when wallet updates
@@ -107,7 +107,7 @@ socket.on('wallet_update', (data) => {
 
 // Also listen for leaderboard updates from server
 socket.on('leaderboard_update', (leaderboard) => {
-    console.log('📊 Leaderboard update received');
+    console.log(' Leaderboard update received');
     if (leaderboard && leaderboard.length) {
         updateLeaderboardDisplay(leaderboard);
         updateTotalVotes(leaderboard);
@@ -164,7 +164,7 @@ async function castVote(contestantId, count) {
     const coinsRequired = count * 10;
     
     if (currentBalance < coinsRequired) {
-        showNotification(`❌ Need ${coinsRequired} coins. You have ${currentBalance}.`, 'error');
+        showNotification(` Need ${coinsRequired} coins. You have ${currentBalance}.`, 'error');
         return;
     }
     
@@ -211,7 +211,7 @@ async function castVote(contestantId, count) {
             refreshLeaderboard();
         } else {
             if (data.error) {
-                showNotification(`❌ ${data.error}`, 'error');
+                showNotification(`${data.error}`, 'error');
                 if (data.balance !== undefined && coinBalance) {
                     coinBalance.textContent = data.balance;
                 }

@@ -26,6 +26,7 @@
     "express-session": "^1.18.1",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
+    "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "passport": "^0.7.0",

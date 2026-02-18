@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 
 const Admin = require('../models/Admin');
+const Contestant = require('../models/Contestant');
 
 
 class adminServices {
@@ -109,6 +110,73 @@ class adminServices {
     }
   }
  
+
+  static async getAllContendersPage() {
+    try {
+
+      const users = await Contestant.findAll();
+
+      return {
+        success: true,
+        data: {
+          users: users || []
+        }
+      };
+
+    } catch (error) {
+      console.error("Error getting dashboard:", error.message);
+      return {
+        success: false,
+        error: `Error loading dashboard: ${error.message}`,
+      };
+    }
+  }
+
+  static async getContender(id) {
+    try {
+
+      const user = await Contestant.findById(id);
+
+      return {
+        success: true,
+        data: {
+          user: user || []
+        }
+      };
+
+    } catch (error) {
+      console.error("Error getting dashboard:", error.message);
+      return {
+        success: false,
+        error: `Error loading dashboard: ${error.message}`,
+      };
+    }
+  }
+
+
+  // add
+  // update
+
+  
+  static async deleteContender(id) {
+    try {
+
+      await Contestant.deleteContender(id);
+
+
+      return {
+        success: true,
+        message: `contestant deleted`,
+      };
+
+    } catch (error) {
+      console.error("Error deleting contestant:", error.message);
+      return {
+        success: false,
+        message: `Error deleting contestant: ${error.message}`,
+      };
+    }
+  }
 
 
 }

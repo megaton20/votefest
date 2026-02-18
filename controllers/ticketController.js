@@ -1,4 +1,4 @@
-const pool  = require('../config/db');
+const pool = require('../config/db');
 const PaymentService = require('../services/PaymentService');
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
@@ -15,7 +15,12 @@ class TicketController {
   }
   
   async getTickets(req, res) {
-    const userId = req.session.userId;
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.redirect('/auth/login');
+    }
+    
+    const userId = req.user.id;
     
     try {
       const userTickets = await pool.query(
@@ -23,10 +28,16 @@ class TicketController {
         [userId]
       );
       
+      // Check for success/error messages in query params
+      const success = req.query.success || null;
+      const error = req.query.error || null;
+      
       res.render('tickets', {
-        user: req.session.user,
+        user: req.user,
         tickets: userTickets.rows,
-        prices: this.ticketPrices
+        prices: this.ticketPrices,
+        success,
+        error
       });
     } catch (error) {
       console.error('Ticket page error:', error);
@@ -35,21 +46,25 @@ class TicketController {
   }
   
   async purchaseTicket(req, res) {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
     const { ticketType } = req.body;
-    const userId = req.session.userId;
-    const userEmail = req.session.user.email;
+    const userId = req.user.id;
+    const userEmail = req.user.email;
     
     if (!this.ticketPrices[ticketType]) {
       return res.status(400).json({ error: 'Invalid ticket type' });
     }
     
     const amount = this.ticketPrices[ticketType];
-    const finalAmount = amount; // Platform fee already included
     
     try {
       const payment = await this.paymentService.initializeTransaction(
         userEmail,
-        finalAmount,
+        amount,
         {
           userId,
           type: 'ticket_purchase',
@@ -70,16 +85,36 @@ class TicketController {
   }
   
   async verifyTicketPurchase(req, res) {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.redirect('/auth/login');
+    }
+    
     const { reference } = req.query;
-    const userId = req.session.userId;
+    const userId = req.user.id;
+    
+    if (!reference) {
+      return res.redirect('/tickets?error=No payment reference provided');
+    }
     
     try {
       const verification = await this.paymentService.verifyTransaction(reference);
+      // console.log('Payment verification:', verification);
       
-      if (verification.data.status === 'success') {
-        const metadata = verification.data.metadata;
-        const ticketType = metadata.ticketType;
-        const amount = verification.data.amount / 100;
+      if (verification.data && verification.data.status === 'success') {
+        const metadata = verification.data.metadata || {};
+        const ticketType = metadata.ticketType || 'regular';
+        const amount = verification.data.amount / 100; // Convert from kobo to naira
+        
+        // Check if ticket already exists
+        const existingTicket = await pool.query(
+          'SELECT * FROM tickets WHERE paystack_reference = $1',
+          [reference]
+        );
+        
+        if (existingTicket.rows.length > 0) {
+          return res.redirect('/tickets?error=Ticket already processed');
+        }
         
         // Generate QR code
         const qrData = JSON.stringify({
@@ -87,7 +122,8 @@ class TicketController {
           type: ticketType,
           userId,
           event: 'VoteFest 2024',
-          timestamp: Date.now()
+          purchaseDate: new Date().toISOString(),
+          amount: amount
         });
         
         const qrCodeUrl = await this.paymentService.generateQRCode(qrData);
@@ -95,19 +131,19 @@ class TicketController {
         // Save ticket to database
         await pool.query(
           `INSERT INTO tickets 
-           (id, user_id, ticket_type, amount, qr_code_url, paystack_reference)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [uuidv4(), userId, ticketType, amount, qrCodeUrl, reference]
+           (id, user_id, ticket_type, amount, qr_code_url, paystack_reference, is_used, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+          [uuidv4(), userId, ticketType, amount, qrCodeUrl, reference, false]
         );
         
         res.redirect('/tickets?success=Ticket purchased successfully');
       } else {
-        res.redirect('/tickets?error=Payment failed');
+        res.redirect('/tickets?error=Payment verification failed');
       }
       
     } catch (error) {
       console.error('Ticket verification error:', error);
-      res.redirect('/tickets?error=Verification failed');
+      res.redirect('/tickets?error=Verification failed: ' + error.message);
     }
   }
 }

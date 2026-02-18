@@ -7,7 +7,6 @@ const indexController = require('../controllers/indexController')
 router.get('/', indexController.eventPage)
 router.get('/contestant/:id', indexController.viewContestantPage)
 
-// Add this to src/routes/index.js
 router.get('/leaderboard', async (req, res) => {
   try {
     // Fetch leaderboard data from your API endpoint
@@ -15,7 +14,7 @@ router.get('/leaderboard', async (req, res) => {
     const leaderboardData = await response.json();
     
     res.render('leaderboard', {
-      user: req.session.user,
+      user: req.user,
       contestants: leaderboardData,
       totalVotes: leaderboardData.reduce((sum, c) => sum + c.votes, 0)
     });
@@ -23,7 +22,7 @@ router.get('/leaderboard', async (req, res) => {
     console.error('Leaderboard page error:', error);
     // Fallback to empty data if API fails
     res.render('leaderboard', {
-      user: req.session.user,
+      user: req.user,
       contestants: [],
       totalVotes: 0
     });

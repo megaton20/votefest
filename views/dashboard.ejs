@@ -8,7 +8,7 @@
                 </svg>
             </a>
             <a href="/wallet" class="flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-lg">
-                <span class="text-purple-700 font-semibold" id="coin-balance"><%= dashboard.balance %></span>
+                <span class="text-purple-700 font-semibold" id="coin-balance"><%= Number(dashboard.balance).toLocaleString("en-US") %></span>
                 <span class="text-gray-600">coins</span>
             </a>
         </div>
@@ -20,8 +20,8 @@
     <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
-                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                    <span class="text-2xl font-bold"><%= user.username.charAt(0).toUpperCase() %></span>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <span class="text-sm font-bold"><%= user.username.charAt(0).toUpperCase() %></span>
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold"><%= user.username %></h1>
@@ -29,7 +29,7 @@
                 </div>
             </div>
             <div class="text-right">
-                <div class="text-3xl font-bold"><%= dashboard.balance %></div>
+                <div class="text-3xl font-bold"><%= Number(dashboard.balance).toLocaleString("en-US") %></div>
                 <div class="text-sm text-purple-100">coins available</div>
             </div>
         </div>
@@ -74,9 +74,9 @@
 
     <!-- Recent Activity -->
     <div class="bg-white rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <span class="mr-2">📊</span> Recent Votes
-        </h3>
+        <h5 class="text-sm font-semibold text-gray-800 mb-4 flex items-center">
+             Recent Votes
+        </h5>
         
         <% if (recentVotes && recentVotes.length > 0) { %>
             <div class="space-y-3">
@@ -92,8 +92,8 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="font-semibold text-purple-700">+<%= vote.vote_count %> votes</div>
-                        <div class="text-xs text-gray-500"><%= vote.coins_spent %> coins</div>
+                        <div class="font-semibold text-purple-700">+<%= Number(vote.vote_count).toLocaleString("en-US") %> votes</div>
+                        <div class="text-xs text-gray-500"><%= Number(vote.coins_spent).toLocaleString("en-US") %> coins</div>
                     </div>
                 </div>
                 <% }) %>

@@ -13,12 +13,7 @@
             <p class="text-gray-600 mt-2">Login to start voting and commenting</p>
         </div>
 
-        <!-- Error message display -->
-        <div id="error-message" class="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg hidden"></div>
-
-        <!-- Success message display -->
-        <div id="success-message"
-            class="mb-4 p-3 bg-green-100 border border-green-200 text-green-700 rounded-lg hidden"></div>
+        <%- include('./partials/messages') %>
 
             <form id="login-form" class="space-y-6" action="/auth/login" method="post">
                 <div>
