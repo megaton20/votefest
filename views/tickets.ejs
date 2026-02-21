@@ -1,14 +1,18 @@
-
-
 <%- include('./partials/navback') %>
-
-
 
 <main class="container mx-auto px-4 pt-20 pb-16 max-w-4xl">
     <!-- Header -->
     <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Event Tickets</h1>
-        <p class="text-gray-600">Get your passes for VoteFest 2024</p>
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg mb-4">
+            <span class="text-3xl">🎫</span>
+        </div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Event Tickets</h1>
+        <p class="text-gray-600 mt-2">Get your passes for VoteFest 2024</p>
+    </div>
+
+    <!-- Error Message (only shown when needed) -->
+    <div id="error-message" class="hidden mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-lg text-center">
+        <p id="error-text"></p>
     </div>
 
     <!-- Ticket Cards -->
@@ -20,28 +24,14 @@
                     <span class="text-2xl">🎟️</span>
                 </div>
                 <h3 class="text-xl font-bold text-gray-800">Regular</h3>
-                <p class="text-gray-600 text-sm mt-1">General admission</p>
+                <p class="text-gray-600 text-sm mt-1">Single admission</p>
             </div>
             <div class="p-6">
-                <div class="text-3xl font-bold text-gray-800 mb-2">₦2,000</div>
-                <p class="text-sm text-gray-500 mb-4">Platform fee: ₦30 included</p>
-                <ul class="space-y-2 mb-6">
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Event access
-                    </li>
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Voting rights
-                    </li>
-                </ul>
-                <button onclick="purchaseTicket('regular')" 
-                        class="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-semibold">
-                    Buy Ticket
+                <div class="text-3xl font-bold text-gray-800 mb-2">₦<%= ticketPrices.regular.price.toLocaleString() %></div>
+                <p class="text-sm text-gray-500 mb-4">1 person</p>
+                <button onclick="purchaseSingleTicket('regular', this)" 
+                        class="buy-btn w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-semibold">
+                    Buy Regular
                 </button>
             </div>
         </div>
@@ -53,73 +43,71 @@
                     <span class="text-2xl">⭐</span>
                 </div>
                 <h3 class="text-xl font-bold text-purple-800">VIP</h3>
-                <p class="text-purple-600 text-sm mt-1">Premium experience</p>
+                <p class="text-purple-600 text-sm mt-1">VIP access</p>
             </div>
             <div class="p-6">
-                <div class="text-3xl font-bold text-gray-800 mb-2">₦10,000</div>
-                <p class="text-sm text-gray-500 mb-4">Platform fee: ₦30 included</p>
-                <ul class="space-y-2 mb-6">
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        VIP seating
-                    </li>
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Meet & greet
-                    </li>
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Exclusive merch
-                    </li>
-                </ul>
-                <button onclick="purchaseTicket('vip')" 
-                        class="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition font-semibold">
-                    Buy VIP Ticket
+                <div class="text-3xl font-bold text-gray-800 mb-2">₦<%= ticketPrices.vip.price.toLocaleString() %></div>
+                <p class="text-sm text-gray-500 mb-4">1 person</p>
+                <button onclick="purchaseSingleTicket('vip', this)" 
+                        class="buy-btn w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition font-semibold">
+                    Buy VIP
                 </button>
             </div>
         </div>
 
-        <!-- VVIP Ticket -->
+        <!-- Table for 5 -->
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition">
-            <div class="p-6 bg-gradient-to-br from-yellow-50 to-orange-50 border-b border-yellow-200">
-                <div class="w-12 h-12 bg-yellow-200 rounded-full flex items-center justify-center mb-4">
-                    <span class="text-2xl">👑</span>
+            <div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-200">
+                <div class="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center mb-4">
+                    <span class="text-2xl">🪑</span>
                 </div>
-                <h3 class="text-xl font-bold text-yellow-800">VVIP</h3>
-                <p class="text-yellow-600 text-sm mt-1">Ultimate experience</p>
+                <h3 class="text-xl font-bold text-blue-800">Table for 5</h3>
+                <p class="text-blue-600 text-sm mt-1">Group seating</p>
             </div>
             <div class="p-6">
-                <div class="text-3xl font-bold text-gray-800 mb-2">₦50,000</div>
-                <p class="text-sm text-gray-500 mb-4">Platform fee: ₦30 included</p>
-                <ul class="space-y-2 mb-6">
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Front row seating
-                    </li>
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        After-party access
-                    </li>
-                    <li class="flex items-center text-sm text-gray-600">
-                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Hotel accommodation
-                    </li>
-                </ul>
-                <button onclick="purchaseTicket('vvip')" 
-                        class="w-full px-4 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-lg hover:opacity-90 transition font-semibold">
-                    Buy VVIP Ticket
+                <div class="text-3xl font-bold text-gray-800 mb-2">₦<%= ticketPrices.table5.price.toLocaleString() %></div>
+                <p class="text-sm text-gray-500 mb-4">5 people (₦3,000 each)</p>
+                <button onclick="openTableModal('table5')" 
+                        class="buy-btn w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:opacity-90 transition font-semibold">
+                    Buy Table for 5
+                </button>
+            </div>
+        </div>
+
+        <!-- Table for 10 -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition">
+            <div class="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-b border-green-200">
+                <div class="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center mb-4">
+                    <span class="text-2xl">🪑🪑</span>
+                </div>
+                <h3 class="text-xl font-bold text-green-800">Table for 10</h3>
+                <p class="text-green-600 text-sm mt-1">Large group</p>
+            </div>
+            <div class="p-6">
+                <div class="text-3xl font-bold text-gray-800 mb-2">₦<%= ticketPrices.table10.price.toLocaleString() %></div>
+                <p class="text-sm text-gray-500 mb-4">10 people (₦2,500 each)</p>
+                <button onclick="openTableModal('table10')" 
+                        class="buy-btn w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:opacity-90 transition font-semibold">
+                    Buy Table for 10
+                </button>
+            </div>
+        </div>
+
+        <!-- Table for 15 -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition">
+            <div class="p-6 bg-gradient-to-br from-orange-50 to-amber-50 border-b border-orange-200">
+                <div class="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center mb-4">
+                    <span class="text-2xl">🪑🪑🪑</span>
+                </div>
+                <h3 class="text-xl font-bold text-orange-800">Table for 15</h3>
+                <p class="text-orange-600 text-sm mt-1">Extra large</p>
+            </div>
+            <div class="p-6">
+                <div class="text-3xl font-bold text-gray-800 mb-2">₦<%= ticketPrices.table15.price.toLocaleString() %></div>
+                <p class="text-sm text-gray-500 mb-4">15 people (₦2,333 each)</p>
+                <button onclick="openTableModal('table15')" 
+                        class="buy-btn w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-lg hover:opacity-90 transition font-semibold">
+                    Buy Table for 15
                 </button>
             </div>
         </div>
@@ -129,83 +117,473 @@
     <div class="bg-white rounded-2xl shadow-lg p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <span class="mr-2">🎫</span> My Tickets
+            <span class="ml-3 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full" id="ticket-count"><%= myTickets?.length || 0 %></span>
         </h3>
         
-        <% if (tickets && tickets.length > 0) { %>
-            <div class="space-y-4">
-                <% tickets.forEach(ticket => { %>
-                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
-                    <div class="flex items-center justify-between">
+        <div id="tickets-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <% if (myTickets && myTickets.length > 0) { %>
+                <% myTickets.forEach(ticket => { %>
+                <div class="border-2 <%= ticket.is_checked_in ? 'border-green-200' : 'border-purple-200' %> rounded-lg p-4 hover:shadow-md transition ticket-card" data-ticket-id="<%= ticket.id %>">
+                    <div class="flex justify-between items-start mb-3">
                         <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="font-semibold text-gray-800 capitalize"><%= ticket.ticket_type %></span>
-                                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                                    <%= ticket.is_used ? 'Used' : 'Valid' %>
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-1">Purchased: <%= new Date(ticket.created_at).toLocaleDateString() %></p>
+                            <span class="px-3 py-1 bg-<%= ticket.ticket_type === 'vip' ? 'purple' : ticket.ticket_type === 'regular' ? 'gray' : 'blue' %>-100 text-<%= ticket.ticket_type === 'vip' ? 'purple' : ticket.ticket_type === 'regular' ? 'gray' : 'blue' %>-700 rounded-full text-xs font-medium">
+                                <%= ticket.ticket_type %>
+                            </span>
+                            <p class="font-medium text-gray-800 mt-2"><%= ticket.attendee_name %></p>
                         </div>
-                        <div class="text-right">
-                            <div class="font-bold text-gray-800">₦<%= ticket.amount.toLocaleString() %></div>
-                            <% if (ticket.qr_code_url) { %>
-                            <button onclick="showQRCode('<%= ticket.qr_code_url %>')" 
-                                    class="text-sm text-purple-600 hover:text-purple-800 mt-1">
-                                Show QR Code
-                            </button>
-                            <% } %>
-                        </div>
+                        <span class="px-2 py-1 bg-<%= ticket.is_checked_in ? 'green' : 'yellow' %>-100 text-<%= ticket.is_checked_in ? 'green' : 'yellow' %>-700 rounded-full text-xs">
+                            <%= ticket.is_checked_in ? 'Checked In' : 'Ready' %>
+                        </span>
                     </div>
+                    
+                    <p class="text-xs text-gray-500 mb-2">From: <%= ticket.purchaser_name %></p>
+                    
+                    <% if (ticket.qr_code_url) { %>
+                    <button onclick="showQRCode('<%= ticket.qr_code_url %>', '<%= ticket.attendee_name %>', '<%= ticket.ticket_type %>')" 
+                            class="w-full mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+                        Show QR Code
+                    </button>
+                    <% } %>
                 </div>
                 <% }) %>
-            </div>
-        <% } else { %>
-            <p class="text-center text-gray-500 py-4">No tickets purchased yet.</p>
-        <% } %>
+            <% } else { %>
+                <div class="col-span-2 text-center py-8 text-gray-500">
+                    No tickets yet. Purchase one above!
+                </div>
+            <% } %>
+        </div>
     </div>
 </main>
 
-<%- include('./partials/navbottom') %>
-
-
-<script>
-function purchaseTicket(type) {
-    fetch('/tickets/purchase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticketType: type })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.authorization_url;
-        } else {
-            showNotification(data.error || 'Purchase failed', 'error');
-        }
-    })
-    .catch(err => {
-        showNotification('Failed to initiate purchase', 'error');
-    });
-}
-
-function showQRCode(qrUrl) {
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-    modal.innerHTML = `
-        <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
-            <div class="text-right">
-                <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+<!-- Table Ticket Modal - Perfectly Centered -->
+<div id="table-modal" class="fixed p-3 inset-0 bg-black/50 hidden items-center justify-center z-50 p-4" style="backdrop-filter: blur(2px);">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl">
+        <!-- Fixed Header -->
+        <div class="p-4 border-b border-gray-200 flex-shrink-0 bg-white rounded-t-2xl">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800" id="modal-title"></h3>
+                    <p class="text-xs text-gray-500 mt-1">You're automatically included. Add details for others.</p>
+                </div>
+                <button onclick="closeTableModal()" class="text-gray-400 hover:text-gray-600 transition p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
-            <div class="text-center">
-                <img src="${qrUrl}" alt="QR Code" class="mx-auto w-48 h-48 mb-4">
-                <h3 class="font-semibold text-gray-800 mb-2">Your Ticket QR Code</h3>
-                <p class="text-sm text-gray-600">Show this at the event entrance</p>
+        </div>
+        
+        <!-- Scrollable Content -->
+        <div id="attendee-forms" class="p-5 overflow-y-auto space-y-4 flex-grow" style="max-height: calc(90vh - 200px);">
+            <!-- Forms will be injected here -->
+        </div>
+        
+        <!-- Fixed Footer -->
+        <div class="p-4 border-t border-gray-200 flex-shrink-0 bg-white rounded-b-2xl">
+            <div class="bg-purple-50 p-4 rounded-xl mb-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-700">Total amount:</span>
+                    <span class="text-2xl font-bold text-purple-700" id="modal-total">₦0</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">You (buyer) + <%= ticketPrices.table5?.capacity - 1 || 4 %> others</p>
+            </div>
+            
+            <button onclick="purchaseTableTickets()" id="purchase-btn" 
+                    class="buy-btn w-full p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition font-semibold">
+                Proceed to Payment
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div id="qr-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6">
+        <div class="text-right">
+            <button onclick="closeQRModal()" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="qr-content" class="text-center"></div>
+    </div>
+</div>
+
+<%- include('./partials/navbottom') %>
+
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+// Ticket categories
+const ticketPrices = {
+    regular: { name: 'Regular', price: 2000, capacity: 1 },
+    vip: { name: 'VIP', price: 10000, capacity: 1 },
+    table5: { name: 'Table for 5', price: 15000, capacity: 5 },
+    table10: { name: 'Table for 10', price: 25000, capacity: 10 },
+    table15: { name: 'Table for 15', price: 35000, capacity: 15 }
+};
+
+let selectedCategory = null;
+let categoryCapacity = 1;
+let categoryPrice = 0;
+let isProcessing = false;
+
+// ============= SOCKET.IO REAL-TIME UPDATES =============
+socket.on('ticket_received', (data) => {
+    console.log('🎫 New ticket received:', data);
+    refreshTickets();
+});
+
+socket.on('tickets_updated', () => {
+    console.log('🔄 Tickets updated');
+    refreshTickets();
+});
+
+// Refresh tickets via API
+async function refreshTickets() {
+    try {
+        const response = await fetch('/tickets/api/my');
+        const data = await response.json();
+        
+        if (data.success) {
+            updateTicketsDisplay(data.tickets);
+        }
+    } catch (error) {
+        console.error('Failed to refresh tickets:', error);
+    }
+}
+
+function updateTicketsDisplay(tickets) {
+    const container = document.getElementById('tickets-container');
+    const countSpan = document.getElementById('ticket-count');
+    
+    countSpan.textContent = tickets.length;
+    
+    if (tickets.length === 0) {
+        container.innerHTML = '<div class="col-span-2 text-center py-8 text-gray-500">No tickets yet. Purchase one above!</div>';
+        return;
+    }
+    
+    let html = '';
+    tickets.forEach(ticket => {
+        const typeColor = ticket.ticket_type === 'vip' ? 'purple' : 
+                         ticket.ticket_type === 'regular' ? 'gray' : 'blue';
+        
+        html += `
+            <div class="border-2 ${ticket.is_checked_in ? 'border-green-200' : 'border-purple-200'} rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="px-3 py-1 bg-${typeColor}-100 text-${typeColor}-700 rounded-full text-xs font-medium">
+                            ${ticket.ticket_type}
+                        </span>
+                        <p class="font-medium text-gray-800 mt-2">${ticket.attendee_name}</p>
+                    </div>
+                    <span class="px-2 py-1 bg-${ticket.is_checked_in ? 'green' : 'yellow'}-100 text-${ticket.is_checked_in ? 'green' : 'yellow'}-700 rounded-full text-xs">
+                        ${ticket.is_checked_in ? 'Checked In' : 'Ready'}
+                    </span>
+                </div>
+                
+                <p class="text-xs text-gray-500 mb-2">From: ${ticket.purchaser_name}</p>
+                
+                <button onclick="showQRCode('${ticket.qr_code_url}', '${ticket.attendee_name}', '${ticket.ticket_type}')" 
+                        class="w-full mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+                    Show QR Code
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// ============= SINGLE TICKET =============
+async function purchaseSingleTicket(category, button) {
+    if (isProcessing) return;
+    
+    isProcessing = true;
+    button.disabled = true;
+    button.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Processing...';
+    
+    try {
+        const response = await fetch('/tickets/purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticketCategory: category })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = data.authorization_url;
+        } else {
+            showError(data.error || 'Purchase failed');
+            button.disabled = false;
+            button.innerHTML = category === 'regular' ? 'Buy Regular' : 'Buy VIP';
+            isProcessing = false;
+        }
+    } catch (error) {
+        showError('Failed to initiate purchase');
+        button.disabled = false;
+        button.innerHTML = category === 'regular' ? 'Buy Regular' : 'Buy VIP';
+        isProcessing = false;
+    }
+}
+
+// ============= TABLE TICKET - BUYER INCLUDED =============
+function openTableModal(category) {
+    selectedCategory = category;
+    const cat = ticketPrices[category];
+    categoryCapacity = cat.capacity;
+    categoryPrice = cat.price;
+    
+    document.getElementById('modal-title').textContent = cat.name;
+    document.getElementById('modal-total').textContent = `₦${cat.price.toLocaleString()}`;
+    
+    // Get current user info from the page (passed from server)
+    const currentUserName = '<%= user?.username || "" %>';
+    const currentUserEmail = '<%= user?.email || "" %>';
+    const currentUserWallet = '<%= user?.wallet_account || "" %>';
+    
+    let forms = '';
+    
+    // Add buyer as first person (pre-filled, disabled)
+    forms += `
+        <div class="bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-purple-700">Person 1 (You - Buyer)</span>
+                <span class="text-[10px] text-white bg-purple-600 px-2 py-0.5 rounded-full">Auto-filled</span>
+            </div>
+            <div class="space-y-2">
+                <input type="text" 
+                       value="${currentUserName}"
+                       class="w-full px-3 py-1.5 text-sm bg-purple-100 border border-purple-300 rounded-lg text-gray-700"
+                       readonly disabled>
+                <input type="email" 
+                       value="${currentUserEmail}"
+                       class="w-full px-3 py-1.5 text-sm bg-purple-100 border border-purple-300 rounded-lg text-gray-700"
+                       readonly disabled>
+                <input type="text" 
+                       value="${currentUserWallet || 'No wallet'}"
+                       class="w-full px-3 py-1.5 text-sm bg-purple-100 border border-purple-300 rounded-lg text-gray-700"
+                       readonly disabled>
             </div>
         </div>
     `;
-    document.body.appendChild(modal);
+    
+    // Add forms for remaining people
+    for (let i = 1; i < cat.capacity; i++) {
+        forms += `
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-medium text-gray-600">Person ${i + 1}</span>
+                </div>
+                <div class="space-y-2">
+                    <input type="text" 
+                           id="attendee-${i}-name" 
+                           placeholder="Full name" 
+                           class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                           required>
+                    <input type="email" 
+                           id="attendee-${i}-email" 
+                           placeholder="Email address" 
+                           class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                           required>
+                    <input type="text" 
+                           id="attendee-${i}-wallet" 
+                           placeholder="Wallet (ACC123456) - optional" 
+                           class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-500"
+                           pattern="ACC\\d{6}">
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('attendee-forms').innerHTML = forms;
+    document.getElementById('table-modal').classList.remove('hidden');
+    document.getElementById('table-modal').classList.add('flex');
 }
+
+function closeTableModal() {
+    document.getElementById('table-modal').classList.add('hidden');
+    document.getElementById('table-modal').classList.remove('flex');
+    selectedCategory = null;
+}
+
+async function purchaseTableTickets() {
+    if (isProcessing || !selectedCategory) return;
+    
+    const attendees = [];
+    const errors = [];
+    
+    // Add current user as first attendee (automatically)
+    attendees.push({
+        fullName: '<%= user?.username %>',
+        email: '<%= user?.email %>',
+        walletAccount: '<%= user?.wallet_account %>' || null
+    });
+    
+    // Collect data for remaining people
+    for (let i = 1; i < categoryCapacity; i++) {
+        const name = document.getElementById(`attendee-${i}-name`)?.value;
+        const email = document.getElementById(`attendee-${i}-email`)?.value;
+        const wallet = document.getElementById(`attendee-${i}-wallet`)?.value;
+        
+        if (!name || !name.trim()) {
+            errors.push(`Person ${i + 1}: Name required`);
+            continue;
+        }
+        
+        if (!email || !email.trim()) {
+            errors.push(`Person ${i + 1}: Email required`);
+            continue;
+        }
+        
+        if (!isValidEmail(email)) {
+            errors.push(`Person ${i + 1}: Invalid email format`);
+            continue;
+        }
+        
+        if (wallet && wallet.trim() && !wallet.match(/^ACC\d{6}$/)) {
+            errors.push(`Person ${i + 1}: Invalid wallet format`);
+            continue;
+        }
+        
+        attendees.push({
+            fullName: name.trim(),
+            email: email.trim().toLowerCase(),
+            walletAccount: wallet?.trim() || null
+        });
+    }
+    
+    if (errors.length > 0) {
+        showError(errors.join('<br>'));
+        return;
+    }
+    
+    isProcessing = true;
+    const btn = document.getElementById('purchase-btn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Processing...';
+    
+    try {
+        const response = await fetch('/tickets/purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                ticketCategory: selectedCategory, 
+                attendees: attendees 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = data.authorization_url;
+        } else {
+            if (data.errors && data.errors.length > 0) {
+                showError(data.errors.join('<br>'));
+            } else {
+                showError(data.error || 'Purchase failed');
+            }
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            isProcessing = false;
+        }
+    } catch (error) {
+        console.error('Purchase error:', error);
+        showError('Failed to initiate purchase');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        isProcessing = false;
+    }
+}
+
+// Add email validation helper
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+
+
+// ============= QR CODE =============
+function showQRCode(qrUrl, name, type) {
+    document.getElementById('qr-content').innerHTML = `
+        <h3 class="text-xl font-bold text-gray-800 mb-2">${name}</h3>
+        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+            <img src="${qrUrl}" alt="QR Code" class="w-48 h-48 mx-auto">
+        </div>
+        <p class="text-sm text-gray-600 mb-4">Show this at the entrance</p>
+        <button onclick="closeQRModal()" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Close</button>
+    `;
+    document.getElementById('qr-modal').classList.remove('hidden');
+    document.getElementById('qr-modal').classList.add('flex');
+}
+
+function closeQRModal() {
+    document.getElementById('qr-modal').classList.add('hidden');
+    document.getElementById('qr-modal').classList.remove('flex');
+}
+
+// ============= ERROR HANDLING =============
+function showError(message) {
+    const errorDiv = document.getElementById('error-message');
+    document.getElementById('error-text').innerHTML = message;
+    errorDiv.classList.remove('hidden');
+    setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+}
+
+// ============= PAYMENT VERIFICATION =============
+async function handlePaymentVerification() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reference = urlParams.get('reference') || urlParams.get('trxref');
+    
+    if (reference) {
+        try {
+            const response = await fetch(`/tickets/verify?reference=${reference}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Socket.IO will handle the update
+                socket.emit('refresh_tickets');
+                
+                // Clean URL
+                const url = new URL(window.location);
+                url.searchParams.delete('reference');
+                url.searchParams.delete('trxref');
+                window.history.replaceState({}, document.title, url);
+            } else {
+                showError(data.error || 'Payment failed');
+            }
+        } catch (error) {
+            showError('Verification failed');
+        }
+    }
+}
+
+// ============= INIT =============
+document.addEventListener('DOMContentLoaded', () => {
+    handlePaymentVerification();
+});
+
+// Styles
+if (!document.getElementById('ticket-styles')) {
+    const style = document.createElement('style');
+    style.textContent = `
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+}
+
+// Make functions global
+window.purchaseSingleTicket = purchaseSingleTicket;
+window.openTableModal = openTableModal;
+window.closeTableModal = closeTableModal;
+window.purchaseTableTickets = purchaseTableTickets;
+window.showQRCode = showQRCode;
+window.closeQRModal = closeQRModal;
 </script>

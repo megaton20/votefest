@@ -6,32 +6,33 @@ class PaymentService {
     this.baseUrl = 'https://api.paystack.co';
   }
 
-  async initializeTransaction(email, amount, metadata = {}) {
-    try {
-      const response = await axios.post(
-        `${this.baseUrl}/transaction/initialize`,
-        {
-          email,
-          amount: amount * 100,
-          metadata,
-          callback_url: `${process.env.CLIENT_URL}/tickets/verify`
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${this.secretKey}`,
-            'Content-Type': 'application/json'
-          }
+ async initializeTransaction(email, amount, metadata = {}) {
+  try {
+    const response = await axios.post(
+      `${this.baseUrl}/transaction/initialize`,
+      {
+        email,
+        amount: amount * 100,
+        metadata,
+        callback_url: `${process.env.CLIENT_URL}/tickets?verify=1` // Redirect to tickets page with flag
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          'Content-Type': 'application/json'
         }
-      );
+      }
+    );
 
-      return response.data;
-    } catch (error) {
-      console.error('Payment initialization error:', error.response?.data || error.message);
-      throw new Error('Payment initialization failed');
-    }
+    return response.data;
+  } catch (error) {
+    console.error('Payment initialization error:', error.response?.data || error.message);
+    throw new Error('Payment initialization failed');
   }
+}
 
   async verifyTransaction(reference) {
+    
     try {
       const response = await axios.get(
         `${this.baseUrl}/transaction/verify/${reference}`,
