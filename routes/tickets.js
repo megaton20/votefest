@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const TicketController = require('../controllers/TicketController');
+const TicketController = require('../controllers/ticketController');
 
-// Middleware to initialize controller with socketService from app.locals
 router.use((req, res, next) => {
   // Create controller instance with socketService from app.locals
   if (!req.app.locals.ticketController) {
