@@ -1,0 +1,32 @@
+<%- include('../partials/navback') %>
+
+<main class="container mx-auto px-4 pt-20 pb-16 max-w-md">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-green-600 p-8 text-center">
+            <div class="w-24 h-24 bg-white/20 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-green-600">Check-in Successful!</h1>
+            <p class="text-green-100 mt-2">Welcome to the event</p>
+        </div>
+        
+        <div class="p-6 text-center">
+            <div class="mb-6">
+                <p class="text-gray-600">Checked in:</p>
+                <!-- Fixed: use 'name' directly from query string -->
+                <p class="text-xl font-bold text-gray-800"><%= name ? decodeURIComponent(name) : 'Attendee' %></p>
+            </div>
+            
+            <div class="flex space-x-3">
+                <a href="/scanner" class="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                    Scan Another
+                </a>
+                <a href="/" class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    Home
+                </a>
+            </div>
+        </div>
+    </div>
+</main>

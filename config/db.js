@@ -1,10 +1,10 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.NEON_KEY,
-  ssl: {
+  connectionString: process.env.NODE_ENV === "production" ? process.env.NEON_KEY : process.env.LOCAL_KEY  ,
+  ssl:process.env.NODE_ENV === "production" ? {
     rejectUnauthorized: false,
-  },
+  } : false,
   max: 20,
 });
 

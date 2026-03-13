@@ -1,611 +1,94 @@
-<%- include('../partials/navback') %>
+<%- include('./partials/navback') %>
 
-<!-- Include QR Scanner Library -->
-<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<main class="container mx-auto px-4 pt-20 pb-16 max-w-lg">
 
-<main class="container mx-auto px-4 pt-20 pb-24">
-    <!-- Header -->
-    <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-lg mb-3">
-            <span class="text-3xl">📷</span>
-        </div>
-        <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Event Scanner</h1>
-        <p class="text-xs text-gray-500 mt-1">Scan QR codes or search manually</p>
-    </div>
 
     <!-- Today's Stats -->
-    <div class="grid grid-cols-4 gap-2 mb-5">
-        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold text-purple-700" id="stat-scanned"><%= stats.checked_in_today || 0 %></div>
-            <div class="text-[10px] text-purple-600">Scanned</div>
+    <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 text-center">
+            <div class="text-3xl font-bold text-purple-700" id="stat-scanned"><%= stats.total_scanned_today %></div>
+            <div class="text-xs text-purple-600 mt-1">Scanned Today</div>
         </div>
-        <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold text-pink-700" id="stat-attendees"><%= stats.total_attendees || 0 %></div>
-            <div class="text-[10px] text-pink-600">Attendees</div>
-        </div>
-        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold text-yellow-700" id="stat-tickets"><%= stats.total_tickets_sold || 0 %></div>
-            <div class="text-[10px] text-yellow-600">Tickets</div>
-        </div>
-        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 text-center">
-            <div class="text-xl font-bold text-green-700" id="stat-revenue">₦<%= (stats.total_revenue || 0).toLocaleString() %></div>
-            <div class="text-[10px] text-green-600">Revenue</div>
+        <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-5 text-center">
+            <div class="text-3xl font-bold text-pink-700" id="stat-attendees"><%= stats.unique_attendees %></div>
+            <div class="text-xs text-pink-600 mt-1">Attendees</div>
         </div>
     </div>
 
-    <!-- Scanner Interface -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
-        <!-- Mode Toggle -->
-        <div class="flex space-x-2 mb-4">
-            <button onclick="switchMode('scanner')" id="scanner-mode-btn" class="flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">
-                📷 QR Scanner
-            </button>
-            <button onclick="switchMode('manual')" id="manual-mode-btn" class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
-                🔍 Manual Search
-            </button>
-        </div>
-
-        <!-- QR Scanner Mode -->
-        <div id="scanner-mode" class="space-y-3">
-            <div id="qr-reader" class="w-full rounded-lg overflow-hidden" style="min-height: 300px;"></div>
-            <div id="qr-reader-results" class="text-center text-sm text-gray-600 py-2"></div>
-            <div class="flex space-x-2">
-                <button onclick="startScanner()" class="flex-1 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium">
-                    Start Camera
-                </button>
-                <button onclick="stopScanner()" class="flex-1 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">
-                    Stop Camera
-                </button>
-            </div>
-        </div>
-
-        <!-- Manual Search Mode -->
-        <div id="manual-mode" class="space-y-3 hidden">
-            <div class="relative">
-                <input type="text" id="search-input" 
-                       placeholder="Search by name, email, wallet (ACC123456), or ticket ID" 
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 pr-10">
-                <button onclick="clearSearch()" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                    ✕
-                </button>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="searchAttendee()" class="py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700">
-                    Search
-                </button>
-                <button onclick="showAllValidTickets()" class="py-2.5 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300">
-                    Show All
-                </button>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">💡 Tip: You can also scan QR code with camera</p>
-        </div>
-
-        <!-- Scan Result -->
-        <div id="scan-result" class="hidden mt-4"></div>
-    </div>
-
-    <!-- Valid Tickets List -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-semibold text-gray-700 flex items-center">
-                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                Valid Tickets (<span id="valid-count"><%= validTickets.length %></span>)
-            </h3>
-            <button onclick="refreshValidTickets()" class="text-xs text-purple-600 hover:text-purple-800">
-                ↻ Refresh
-            </button>
-        </div>
+    <!-- Instructions Card -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <span class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3"></span>
+            How to Scan
+        </h2>
         
-        <div class="space-y-2 max-h-60 overflow-y-auto" id="valid-tickets-list">
-            <% validTickets.forEach(ticket => { %>
-            <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs hover:bg-gray-100 transition">
-                <div class="flex-1">
-                    <div class="font-medium text-gray-800"><%= ticket.attendee_name %></div>
-                    <div class="text-gray-500"><%= ticket.attendee_email %></div>
-                    <% if (ticket.wallet_account) { %>
-                    <div class="text-purple-600 text-[10px]"><%= ticket.wallet_account %></div>
-                    <% } %>
+        <div class="space-y-4">
+            <div class="flex items-center space-x-4">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-sm font-bold text-purple-600">1</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <span class="px-2 py-1 bg-<%= ticket.ticket_type === 'vip' ? 'purple' : ticket.ticket_type === 'regular' ? 'gray' : 'blue' %>-100 text-<%= ticket.ticket_type === 'vip' ? 'purple' : ticket.ticket_type === 'regular' ? 'gray' : 'blue' %>-700 rounded-full text-[10px] font-medium">
-                        <%= ticket.ticket_type %>
-                    </span>
-                    <button onclick="quickCheckIn('<%= ticket.id %>', '<%= ticket.attendee_name %>')" 
-                            class="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs"
-                            title="Quick check-in">
-                        ✓
-                    </button>
-                </div>
+                <p class="text-gray-600">Open your phone's camera app</p>
             </div>
-            <% }) %>
+            
+            <div class="flex items-center space-x-4">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-sm font-bold text-purple-600">2</span>
+                </div>
+                <p class="text-gray-600">Point at the attendee's QR code</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-sm font-bold text-purple-600">3</span>
+                </div>
+                <p class="text-gray-600">Tap the notification that appears</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-sm font-bold text-purple-600">4</span>
+                </div>
+                <p class="text-gray-600">Confirm check-in on the page</p>
+            </div>
         </div>
     </div>
 
-    <!-- Recent Check-ins -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-semibold text-gray-700">📋 Recent Check-ins</h3>
-            <button onclick="refreshRecentCheckins()" class="text-xs text-purple-600 hover:text-purple-800">
-                ↻ Refresh
-            </button>
-        </div>
+    <!-- Manual Entry Fallback -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <span class="w-1 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3"></span>
+            Manual Entry
+        </h2>
         
-        <div class="space-y-2 max-h-60 overflow-y-auto" id="recent-checkins-list">
-            <% recentCheckins.forEach(scan => { %>
-            <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs">
-                <div>
-                    <div class="font-medium text-gray-800"><%= scan.attendee_name %></div>
-                    <div class="text-gray-500"><%= new Date(scan.scanned_at).toLocaleTimeString() %></div>
-                </div>
-                <div class="text-right">
-                    <span class="px-2 py-1 bg-<%= scan.ticket_type === 'vip' ? 'purple' : scan.ticket_type === 'regular' ? 'gray' : 'blue' %>-100 text-<%= scan.ticket_type === 'vip' ? 'purple' : scan.ticket_type === 'regular' ? 'gray' : 'blue' %>-700 rounded-full text-[10px] font-medium">
-                        <%= scan.ticket_type %>
-                    </span>
-                    <div class="text-[10px] text-gray-400 mt-1">by <%= scan.scanner_name %></div>
-                </div>
-            </div>
-            <% }) %>
+        <div class="space-y-3">
+            <input type="text" id="manual-ticket-input" placeholder="Enter ticket ID" 
+                   class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+            <button onclick="manualVerify()" class="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition font-medium">
+                Verify Ticket
+            </button>
         </div>
     </div>
 </main>
 
 <script>
-// ============= QR SCANNER SETUP =============
-let html5QrCode = null;
-let scannerActive = false;
-let currentMode = 'scanner';
-
-// Initialize QR scanner
-function initQRScanner() {
-    const qrReaderElement = document.getElementById('qr-reader');
-    if (!qrReaderElement) return;
-    
-    if (html5QrCode) {
-        html5QrCode.clear();
-        html5QrCode = null;
+function manualVerify() {
+    const input = document.getElementById('manual-ticket-input').value.trim();
+    if (input) {
+        window.location.href = `/scanner/verify/${input}`;
     }
-    
-    html5QrCode = new Html5Qrcode("qr-reader");
 }
 
-// Start scanner
-async function startScanner() {
-    const resultDiv = document.getElementById('qr-reader-results');
-    
-    if (!html5QrCode) {
-        initQRScanner();
-    }
-    
-    resultDiv.innerHTML = 'Starting camera...';
-    
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-        html5QrCode.stop().then(() => {
-            scannerActive = false;
-            resultDiv.innerHTML = `✅ QR Code detected!`;
-            processScannedTicket(decodedText);
-        }).catch(err => {
-            console.error('Error stopping scanner:', err);
-        });
-    };
-    
-    const config = { 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
-    };
-    
+// Auto-refresh stats every 30 seconds
+setInterval(async () => {
     try {
-        await html5QrCode.start(
-            { facingMode: "environment" }, 
-            config, 
-            qrCodeSuccessCallback
-        );
-        scannerActive = true;
-        resultDiv.innerHTML = 'Scanner active - point camera at QR code';
-    } catch (err) {
-        console.error('Error starting scanner:', err);
-        resultDiv.innerHTML = '❌ Error starting camera: ' + err.message;
-    }
-}
-
-// Stop scanner
-function stopScanner() {
-    if (html5QrCode && scannerActive) {
-        html5QrCode.stop().then(() => {
-            scannerActive = false;
-            document.getElementById('qr-reader-results').innerHTML = 'Scanner stopped';
-        }).catch(err => {
-            console.error('Error stopping scanner:', err);
-        });
-    }
-}
-
-// Process scanned ticket
-async function processScannedTicket(scannedData) {
-    let identifier = scannedData;
-    try {
-        const parsed = JSON.parse(scannedData);
-        identifier = parsed.ticketId || parsed.reference || parsed.id || scannedData;
-    } catch {
-        // Not JSON, use as is
-    }
-    
-    document.getElementById('search-input').value = identifier;
-    await searchAttendee();
-}
-
-// ============= MODE SWITCHING =============
-function switchMode(mode) {
-    currentMode = mode;
-    
-    document.getElementById('scanner-mode-btn').className = mode === 'scanner' 
-        ? 'flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium'
-        : 'flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium';
-    
-    document.getElementById('manual-mode-btn').className = mode === 'manual'
-        ? 'flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium'
-        : 'flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium';
-    
-    document.getElementById('scanner-mode').className = mode === 'scanner' ? 'space-y-3' : 'hidden';
-    document.getElementById('manual-mode').className = mode === 'manual' ? 'space-y-3' : 'hidden';
-    
-    if (mode !== 'scanner' && scannerActive) {
-        stopScanner();
-    }
-}
-
-function clearSearch() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('scan-result').classList.add('hidden');
-}
-
-// ============= SEARCH & VERIFY =============
-async function searchAttendee() {
-    const identifier = document.getElementById('search-input').value.trim();
-    if (!identifier) {
-        showNotification('Please enter a search term', 'error');
-        return;
-    }
-    
-    const resultDiv = document.getElementById('scan-result');
-    resultDiv.innerHTML = '<div class="text-center py-4"><span class="inline-block animate-spin mr-2">⏳</span> Searching...</div>';
-    resultDiv.className = 'mt-4 p-4 bg-blue-100 text-blue-700 rounded-lg';
-    resultDiv.classList.remove('hidden');
-    
-    try {
-        const response = await fetch('/tickets/admin/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier })
-        });
-        
+        const response = await fetch('/scanner/stats');
         const data = await response.json();
-        
         if (data.success) {
-            if (data.multiple) {
-                displayMultipleAttendees(data.attendees);
-            } else {
-                displaySingleAttendee(data.attendee);
-            }
-        } else {
-            resultDiv.innerHTML = `
-                <div class="text-center">
-                    <div class="text-3xl mb-2">❌</div>
-                    <p class="font-medium">${data.message || 'No attendee found'}</p>
-                    <p class="text-xs mt-2 text-gray-600">Try scanning QR code or searching by email/wallet</p>
-                </div>
-            `;
-            resultDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg';
+            document.getElementById('stat-scanned').textContent = data.stats.total_scanned_today;
+            document.getElementById('stat-attendees').textContent = data.stats.unique_attendees;
         }
     } catch (error) {
-        console.error('Search error:', error);
-        resultDiv.innerHTML = `
-            <div class="text-center">
-                <div class="text-3xl mb-2">❌</div>
-                <p>Search failed. Please try again.</p>
-            </div>
-        `;
-        resultDiv.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg';
+        console.error('Stats refresh error:', error);
     }
-}
-
-function displayMultipleAttendees(attendees) {
-    const resultDiv = document.getElementById('scan-result');
-    
-    let html = '<h4 class="font-medium mb-3">Multiple Attendees Found</h4>';
-    html += '<div class="space-y-2 max-h-60 overflow-y-auto">';
-    
-    attendees.forEach(a => {
-        html += `
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="flex-1">
-                    <div class="font-medium">${a.name}</div>
-                    <div class="text-xs text-gray-600">${a.email}</div>
-                    ${a.wallet ? `<div class="text-xs text-purple-600">${a.wallet}</div>` : ''}
-                    <div class="text-xs text-gray-500 mt-1">Purchased by: ${a.purchaser}</div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="px-2 py-1 bg-${a.ticketType === 'vip' ? 'purple' : a.ticketType === 'regular' ? 'gray' : 'blue'}-100 text-${a.ticketType === 'vip' ? 'purple' : a.ticketType === 'regular' ? 'gray' : 'blue'}-700 rounded-full text-xs">
-                        ${a.ticketType}
-                    </span>
-                    <button onclick="checkInAttendee('${a.id}')" 
-                            class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
-                        Check In
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    
-    resultDiv.innerHTML = html;
-    resultDiv.className = 'mt-4 p-4 bg-white border border-gray-200 rounded-lg';
-}
-
-function displaySingleAttendee(attendee) {
-    const resultDiv = document.getElementById('scan-result');
-    
-    resultDiv.innerHTML = `
-        <div class="flex justify-between items-start mb-4">
-            <h4 class="font-medium text-gray-800">Attendee Details</h4>
-            <span class="px-3 py-1 bg-${attendee.ticketType === 'vip' ? 'purple' : attendee.ticketType === 'regular' ? 'gray' : 'blue'}-100 text-${attendee.ticketType === 'vip' ? 'purple' : attendee.ticketType === 'regular' ? 'gray' : 'blue'}-700 rounded-full text-xs font-medium">
-                ${attendee.ticketType}
-            </span>
-        </div>
-        <div class="space-y-3">
-            <div class="grid grid-cols-3 gap-2 text-sm">
-                <div class="col-span-1 text-gray-500">Name:</div>
-                <div class="col-span-2 font-medium">${attendee.name}</div>
-                
-                <div class="col-span-1 text-gray-500">Email:</div>
-                <div class="col-span-2 font-medium">${attendee.email}</div>
-                
-                ${attendee.wallet ? `
-                <div class="col-span-1 text-gray-500">Wallet:</div>
-                <div class="col-span-2 font-mono text-purple-600">${attendee.wallet}</div>
-                ` : ''}
-                
-                <div class="col-span-1 text-gray-500">Purchased by:</div>
-                <div class="col-span-2">${attendee.purchaserName}</div>
-            </div>
-            
-            <div class="flex space-x-2 pt-3 border-t">
-                <button onclick="checkInAttendee('${attendee.id}')" 
-                        class="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
-                    ✅ Check In
-                </button>
-                <button onclick="clearSearch()" 
-                        class="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300">
-                    Clear
-                </button>
-            </div>
-        </div>
-    `;
-    
-    resultDiv.className = 'mt-4 p-4 bg-white border border-gray-200 rounded-lg';
-}
-
-// ============= CHECK-IN FUNCTIONS =============
-async function checkInAttendee(attendeeId) {
-    try {
-        const response = await fetch('/tickets/admin/checkin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ attendeeId })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification(data.message, 'success');
-            
-            document.getElementById('search-input').value = '';
-            document.getElementById('scan-result').classList.add('hidden');
-            
-            refreshStats();
-            refreshValidTickets();
-            refreshRecentCheckins();
-            
-            if (currentMode === 'scanner' && scannerActive) {
-                setTimeout(() => {
-                    stopScanner();
-                    startScanner();
-                }, 1000);
-            }
-        } else {
-            if (data.message) {
-                showNotification(data.message, 'info');
-            } else {
-                showNotification(data.error || 'Check-in failed', 'error');
-            }
-        }
-    } catch (error) {
-        console.error('Check-in error:', error);
-        showNotification('Failed to check in', 'error');
-    }
-}
-
-function quickCheckIn(attendeeId, name) {
-    if (confirm(`Check in ${name}?`)) {
-        checkInAttendee(attendeeId);
-    }
-}
-
-// ============= REFRESH FUNCTIONS =============
-async function refreshStats() {
-    try {
-        const response = await fetch('/tickets/admin/stats');
-        const data = await response.json();
-        
-        if (data.success) {
-            document.getElementById('stat-scanned').textContent = data.stats.checked_in_today || 0;
-            document.getElementById('stat-attendees').textContent = data.stats.total_attendees || 0;
-            document.getElementById('stat-tickets').textContent = data.stats.total_tickets_sold || 0;
-            document.getElementById('stat-revenue').textContent = `₦${(data.stats.total_revenue || 0).toLocaleString()}`;
-        }
-    } catch (error) {
-        console.error('Refresh stats error:', error);
-    }
-}
-
-async function refreshValidTickets() {
-    try {
-        const response = await fetch('/tickets/admin/valid');
-        const data = await response.json();
-        
-        if (data.success) {
-            updateValidTicketsList(data.tickets);
-        }
-    } catch (error) {
-        console.error('Refresh valid tickets error:', error);
-    }
-}
-
-async function refreshRecentCheckins() {
-    try {
-        const response = await fetch('/tickets/admin/history?limit=20');
-        const data = await response.json();
-        
-        if (data.success) {
-            updateRecentCheckinsList(data.scans);
-        }
-    } catch (error) {
-        console.error('Refresh checkins error:', error);
-    }
-}
-
-function updateValidTicketsList(tickets) {
-    const list = document.getElementById('valid-tickets-list');
-    const countSpan = document.getElementById('valid-count');
-    
-    countSpan.textContent = tickets.length;
-    
-    if (tickets.length === 0) {
-        list.innerHTML = '<div class="text-center py-4 text-gray-500">No valid tickets</div>';
-        return;
-    }
-    
-    list.innerHTML = tickets.map(ticket => `
-        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs hover:bg-gray-100 transition">
-            <div class="flex-1">
-                <div class="font-medium text-gray-800">${ticket.attendee_name}</div>
-                <div class="text-gray-500">${ticket.attendee_email}</div>
-                ${ticket.wallet_account ? `<div class="text-purple-600 text-[10px]">${ticket.wallet_account}</div>` : ''}
-            </div>
-            <div class="flex items-center space-x-2">
-                <span class="px-2 py-1 bg-${ticket.ticket_type === 'vip' ? 'purple' : ticket.ticket_type === 'regular' ? 'gray' : 'blue'}-100 text-${ticket.ticket_type === 'vip' ? 'purple' : ticket.ticket_type === 'regular' ? 'gray' : 'blue'}-700 rounded-full text-[10px] font-medium">
-                    ${ticket.ticket_type}
-                </span>
-                <button onclick="quickCheckIn('${ticket.id}', '${ticket.attendee_name}')" 
-                        class="px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs"
-                        title="Quick check-in">
-                    ✓
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function updateRecentCheckinsList(scans) {
-    const list = document.getElementById('recent-checkins-list');
-    
-    if (scans.length === 0) {
-        list.innerHTML = '<div class="text-center py-4 text-gray-500">No recent check-ins</div>';
-        return;
-    }
-    
-    list.innerHTML = scans.map(scan => `
-        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs">
-            <div>
-                <div class="font-medium text-gray-800">${scan.attendee_name}</div>
-                <div class="text-gray-500">${new Date(scan.scanned_at).toLocaleTimeString()}</div>
-            </div>
-            <div class="text-right">
-                <span class="px-2 py-1 bg-${scan.ticket_type === 'vip' ? 'purple' : scan.ticket_type === 'regular' ? 'gray' : 'blue'}-100 text-${scan.ticket_type === 'vip' ? 'purple' : scan.ticket_type === 'regular' ? 'gray' : 'blue'}-700 rounded-full text-[10px] font-medium">
-                    ${scan.ticket_type}
-                </span>
-                <div class="text-[10px] text-gray-400 mt-1">by ${scan.scanner_name}</div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function showAllValidTickets() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('scan-result').classList.add('hidden');
-    document.getElementById('valid-tickets-list').scrollIntoView({ behavior: 'smooth' });
-}
-
-// ============= NOTIFICATION =============
-function showNotification(message, type = 'info', duration = 3000) {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-20 right-4 px-4 py-3 rounded-lg shadow-lg z-50 animate-slide-up ${
-        type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
-        type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
-        'bg-blue-100 text-blue-800 border border-blue-200'
-    }`;
-    notification.innerHTML = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, duration);
-}
-
-// ============= INITIALIZATION =============
-document.addEventListener('DOMContentLoaded', () => {
-    initQRScanner();
-});
-
-window.addEventListener('beforeunload', () => {
-    if (scannerActive) {
-        stopScanner();
-    }
-});
-
-document.getElementById('search-input')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        searchAttendee();
-    }
-});
-
-// Styles
-if (!document.getElementById('scanner-styles')) {
-    const style = document.createElement('style');
-    style.id = 'scanner-styles';
-    style.textContent = `
-        .animate-slide-up {
-            animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// Make functions global
-window.switchMode = switchMode;
-window.startScanner = startScanner;
-window.stopScanner = stopScanner;
-window.searchAttendee = searchAttendee;
-window.clearSearch = clearSearch;
-window.checkInAttendee = checkInAttendee;
-window.quickCheckIn = quickCheckIn;
-window.showAllValidTickets = showAllValidTickets;
-window.refreshValidTickets = refreshValidTickets;
-window.refreshRecentCheckins = refreshRecentCheckins;
-window.showNotification = showNotification;
+}, 30000);
 </script>

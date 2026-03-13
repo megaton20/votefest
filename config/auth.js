@@ -8,6 +8,9 @@ module.exports = {
     if (openSession) {
       return next();
     }
+
+    req.session.returnTo = req.originalUrl
+ 
     req.flash("error_msg", "Please sign in to use our resources")
     res.redirect('/auth/login')
     return

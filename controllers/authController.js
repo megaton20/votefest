@@ -20,7 +20,7 @@ exports.registerPage = async (req, res) => {
 
 exports.loginPage = async (req, res) => {
   const { userActive } = await AuthServices.loginPage(req);
-
+ 
   if (req.isAPI) {
     return res.json({
       success: true,
@@ -29,6 +29,7 @@ exports.loginPage = async (req, res) => {
   }
 
   res.render('login', {
+    returnTo: req.session.returnTo,
     messages: req.flash() // Pass flash messages to view
   });
 };
@@ -103,6 +104,8 @@ exports.userCreate = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+       let returnTo = req.session.returnTo 
+    
     
     if (!email || !password) {
       if (req.isAPI) {
@@ -124,9 +127,11 @@ exports.login = async (req, res, next) => {
       });
     } else {
       // Web login success
-      const redirectUrl = req.session.returnTo || '/handler';
+      const redirectUrl = returnTo || '/handler';
+
       delete req.session.returnTo;
 
+      
       req.flash('success_msg', 'Login successful! Welcome back.');
       return res.redirect(redirectUrl);
     }

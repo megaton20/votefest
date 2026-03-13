@@ -9,7 +9,17 @@ module.exports = {
       return next()
     }
     req.flash('error_msg', "invalid request...")
-    return res.redirect('/user')
+    return res.redirect('/')
+  },
+
+  ensureSecurity: function (req, res, next) {
+    
+     if (req.user.is_admin ) {
+       return next()
+      }
+      req.flash('error_msg', "invalid request...")
+     return res.redirect('/')
+
   }
 
 };

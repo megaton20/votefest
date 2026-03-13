@@ -1,7 +1,6 @@
 // Load dotenv only in development
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
-  console.log('📝 Loading environment variables from .env file (development mode)');
 }
 
 const express = require('express');
@@ -99,6 +98,8 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   res.locals.user = req.user || null;
   res.locals.currentPath = req.path;
+//   console.log(res.locals.currentPath);
+  
   next();
 });
 

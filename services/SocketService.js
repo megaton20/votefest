@@ -11,13 +11,13 @@ class SocketService {
   
   initializeEvents() {
     this.io.on('connection', (socket) => {
-      console.log('🔌 Client connected:', socket.id);
+      console.log('Client connected:', socket.id);
       
       socket.on('authenticate', (userId) => {
         if (userId) {
           this.userSockets.set(userId.toString(), socket.id);
           socket.userId = userId;
-          console.log(`✅ User ${userId} authenticated`);
+          console.log(`User ${userId} authenticated`);
         }
       });
       
@@ -26,6 +26,11 @@ class SocketService {
         this.throttleLeaderboardUpdate();
       });
       
+         socket.on('tickets', async (data) => {
+        this.io.emit('tickets_updated', data);
+        // this.throttleLeaderboardUpdate();
+      });
+
       socket.on('comment', (data) => {
         this.io.emit('comment_update', data);
       });
@@ -34,7 +39,7 @@ class SocketService {
         if (socket.userId) {
           this.userSockets.delete(socket.userId.toString());
         }
-        console.log('🔌 Client disconnected:', socket.id);
+        console.log('Client disconnected:', socket.id);
       });
     });
   }

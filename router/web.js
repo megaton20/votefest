@@ -9,11 +9,13 @@ const indexRoutes =  require('../routes/index')
 const authRouter = require('../routes/authRoutes')
 const adminRouter = require('../routes/adminRoutes')
 const userRouter = require('../routes/userRouter')
+const scannerRouter = require('../routes/scanner')
 
 router.use('/', indexRoutes)
 router.use('/auth', authRouter)
 router.use('/dashboard',ensureAuthenticated, userRouter)
 router.use('/admin',ensureAuthenticated, adminRouter)
+router.use('/scanner',ensureAuthenticated, scannerRouter)
 
 
 router.use('/vote', require('../routes/votes'));

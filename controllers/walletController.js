@@ -80,7 +80,7 @@ class WalletController {
       
       if (verification.data.status === 'success') {
         const amount = verification.data.amount / 100;
-        const coins = amount * 10; // 1 NGN = 10 coins
+        const coins =  Math.floor(amount /20); 
         
         const wallet = new Wallet(userId);
         const result = await wallet.addCoins(coins, 'deposit', {
