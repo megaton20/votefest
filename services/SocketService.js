@@ -11,7 +11,6 @@ class SocketService {
   
   initializeEvents() {
     this.io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
       
       socket.on('authenticate', (userId) => {
         if (userId) {

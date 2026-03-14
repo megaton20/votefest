@@ -24,7 +24,7 @@ router.get('/balance', async (req, res) => {
         const Wallet = require('../models/Wallet');
         const wallet = new Wallet(req.user.id);
         const balance = await wallet.getBalance();
-        res.json({ balance });
+        res.json({success:true, balance });
     } catch (error) {
         console.error('Balance fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch balance' });

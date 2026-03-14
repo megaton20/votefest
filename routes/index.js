@@ -31,9 +31,9 @@ router.get('/leaderboard', async (req, res) => {
 
 router.get('/handler', (req, res) => {
   if (req.isAuthenticated()) {
-    const role = req.user.role;
+    const isAdmin = req.user.is_admin;
 
-    if (role === "admin") {
+    if (isAdmin) {
       return res.redirect("/admin");
     } else {
       // Regular users go directly to chat with admin

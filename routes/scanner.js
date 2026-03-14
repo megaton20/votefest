@@ -30,6 +30,6 @@ router.get('/success', ensureAuthenticated,ensureSecurity,  (req, res) => {
 router.post('/validate', ensureAuthenticated, ensureSecurity, (req, res) => scannerController.validateTicket(req, res));
 router.post('/scan', ensureAuthenticated, ensureSecurity, (req, res) => scannerController.scanTicket(req, res));
 router.get('/history', ensureAuthenticated, ensureSecurity, (req, res) => scannerController.getScanHistory(req, res));
-router.get('/stats', ensureAuthenticated, ensureSecurity, (req, res) => scannerController.getStats(req, res));
+// router.get('/stats', ensureAuthenticated, ensureSecurity, (req, res) => scannerController.getStats(req, res));
 
 module.exports = router;

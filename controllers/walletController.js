@@ -115,6 +115,7 @@ class WalletController {
   async transferCoins(req, res) {
     const { receiverWallet, amount } = req.body;
     const userId = req.user.id;
+    const username = req.user.username;
     
     if (!receiverWallet || !amount || amount < 10) {
       return res.status(400).json({ 
@@ -141,6 +142,7 @@ class WalletController {
         'SELECT id FROM users WHERE wallet_account = $1',
         [receiverWallet]
       );
+    
       
       if (receiverResult.rows.length > 0) {
         const receiverId = receiverResult.rows[0].id;
@@ -149,13 +151,14 @@ class WalletController {
         
         this.socketService.sendToUser(receiverId, 'wallet_update', {
           newBalance: receiverBalance,
-          message: `Received ${amount} coins from ${req.user.walletAccount}`
+
+          message: `Received ${amount} coins from ${username}`
         });
       }
       
       res.json({
         success: true,
-        message: `✅ Successfully transferred ${amount} coins to ${receiverWallet}`,
+        message: ` Successfully transferred ${amount} coins to ${receiverWallet}`,
         transactionRef: transfer.transactionRef,
         newBalance: senderBalance
       });

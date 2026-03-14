@@ -2,11 +2,6 @@
 
 <main class="container mx-auto px-4 pt-20 pb-16 max-w-4xl">
 
-    <!-- Error Message (only shown when needed) -->
-    <div id="error-message" class="hidden mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-lg text-center">
-        <p id="error-text"></p>
-    </div>
-
     <!-- Ticket Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <!-- Regular Ticket -->
@@ -290,7 +285,7 @@ async function purchaseSingleTicket(category, button) {
     
     isProcessing = true;
     button.disabled = true;
-    button.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Processing...';
+    button.innerHTML = '<span class="inline-block animate-spin mr-2"> | </span> Processing...';
     
     try {
         const response = await fetch('/tickets/purchase', {
@@ -304,13 +299,14 @@ async function purchaseSingleTicket(category, button) {
         if (data.success) {
             window.location.href = data.authorization_url;
         } else {
-            showError(data.error || 'Purchase failed');
+             // Show success notification
+                showNotification(data.error || 'Purchase failed', 'error');
             button.disabled = false;
             button.innerHTML = category === 'regular' ? 'Buy Regular' : 'Buy VIP';
             isProcessing = false;
         }
     } catch (error) {
-        showError('Failed to initiate purchase');
+        showNotification('Failed to initiate purchase', 'error');
         button.disabled = false;
         button.innerHTML = category === 'regular' ? 'Buy Regular' : 'Buy VIP';
         isProcessing = false;
@@ -444,7 +440,7 @@ async function purchaseTableTickets() {
     }
     
     if (errors.length > 0) {
-        showError(errors.join('<br>'));
+        showNotification(errors.join(), 'error');
         return;
     }
     
@@ -470,9 +466,9 @@ async function purchaseTableTickets() {
             window.location.href = data.authorization_url;
         } else {
             if (data.errors && data.errors.length > 0) {
-                showError(data.errors.join('<br>'));
+                showNotification(data.errors.join(), 'error');
             } else {
-                showError(data.error || 'Purchase failed');
+                showNotification(data.error || 'Purchase failed', 'error');
             }
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -480,7 +476,7 @@ async function purchaseTableTickets() {
         }
     } catch (error) {
         console.error('Purchase error:', error);
-        showError('Failed to initiate purchase');
+         showNotification('Failed to initiate purchase', 'error');
         btn.disabled = false;
         btn.innerHTML = originalText;
         isProcessing = false;
@@ -513,13 +509,7 @@ function closeQRModal() {
     document.getElementById('qr-modal').classList.remove('flex');
 }
 
-// ============= ERROR HANDLING =============
-function showError(message) {
-    const errorDiv = document.getElementById('error-message');
-    document.getElementById('error-text').innerHTML = message;
-    errorDiv.classList.remove('hidden');
-    setTimeout(() => errorDiv.classList.add('hidden'), 5000);
-}
+
 
 
 // ============= PAYMENT VERIFICATION =============
@@ -533,14 +523,13 @@ async function handlePaymentVerification() {
             const data = await response.json();
             
             if (data.success) {
-                // Socket.IO will handle the update
+                // Socket will handle the update
                 socket.emit('refresh_tickets');
 
                   // Force immediate refresh
                 await refreshTickets();
 
                  // Show success notification
-
                 showNotification('Tickets purchased successfully!', 'success');
                 // Clean URL
                 const url = new URL(window.location);
@@ -548,10 +537,10 @@ async function handlePaymentVerification() {
                 url.searchParams.delete('trxref');
                 window.history.replaceState({}, document.title, url);
             } else {
-                showError(data.error || 'Payment failed');
+                showNotification(data.error || 'Payment failed', 'error');
             }
         } catch (error) {
-            showError('Verification failed');
+            showNotification('Verification failed', 'error');
         }
     }
 }

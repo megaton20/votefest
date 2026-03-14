@@ -266,9 +266,7 @@ async verifyExternalScan(req, res) {
 
          // Emit socket events
       this.socketService.io.emit('tickets_updated', {
-        // contestantId,
-        // newVotes,
-        // voteCount,
+        
         userId:ticketData.user_id
       });
 

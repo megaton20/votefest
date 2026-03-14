@@ -2,8 +2,8 @@
 <nav class="bg-white shadow-lg fixed top-0 w-full z-50">
     <div class="container mx-auto px-4 py-3">
         <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
+            <div class="flex items-center">
+                <h1> TCQ </h1>
             </div>
             <div class="flex items-center space-x-4">
                 <% if (user) { %>
@@ -27,9 +27,26 @@
 <!-- Main Content -->
 <main class="container mx-auto px-4 pt-20 pb-16">
     <!-- Hero Section -->
-    <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">VoteFest 2024</h1>
-        <p class="text-xl text-gray-600 max-w-2xl mx-auto">Support your favorite contestants in real-time. Every vote counts!</p>
+    <div class="text-center mb-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-4">
+        <p class="text-2xl md:text-3xl font-bold mb-4">
+            
+            Hello
+            <% if (user) { %>
+                <%= user.username %>!
+                   <% } else { %>
+                    ,
+                <% } %> 
+                
+        </p>
+             <h1 class="text-4xl md:text-5xl font-bold  mb-4"> Welcome To The carnival Queen 2026</h1>
+        <p class="text-sm max-w-2xl mx-auto">Support your favorite contestants in real-time. Every vote counts!</p>
+        <br>
+        <div class="mt-5">
+            
+            <a href="/wallet" class=" p-4 text-white rounded-xl hover:opacity-90 transition font-semibold">
+                Get coins Now
+            </a>
+        </div>
     </div>
 
     <!-- Live Leaderboard -->
@@ -48,7 +65,7 @@
             </div>
         </div>
         
-        <div id="leaderboard" class="bg-white rounded-xl shadow-lg p-4">
+        <div id="leaderboard" class=" rounded-xl shadow-lg p-4">
             <% contestants.slice(0, 5).forEach((contestant, index) => { %>
             <div class="flex items-center justify-between p-3 <%= index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50' : 'hover:bg-gray-50' %> rounded-lg transition mb-2">
                 <div class="flex items-center space-x-4">

@@ -161,8 +161,45 @@
 <%- include('./partials/navbottom') %>
 
 
-
+<!-- Socket.IO -->
+<script src="/socket.io/socket.io.js"></script>
 <script>
+
+    const socket = io();
+
+// Authenticate if user is logged in
+const userId = document.querySelector('meta[name="user-id"]')?.content;
+if (userId) {
+    socket.emit('authenticate', userId);
+}
+
+    socket.on('wallet_update', async(data) => {
+    await refreshBalance();
+     showNotification(`You just got coins from ${data.message}`, 'success');
+    });
+
+// Refresh refreshBalance via API
+async function refreshBalance() {
+    try {
+        const response = await fetch('/wallet/balance/');
+        const data = await response.json();
+        
+        if (data) {        
+            // Update balance
+            const walletBalance = document.getElementById('wallet-balance');
+            walletBalance.textContent = Number(data.balance).toLocaleString("en-US");
+           
+        return;
+        }
+    } catch (error) {
+        console.error('Failed to refresh coin balance:', error);
+        showNotification('error from us', 'error');
+        return;
+    }
+}
+
+
+
 // Paystack initialization
 const paystackKey = document.querySelector('meta[name="paystack-key"]')?.content || '<%= paystackKey %>';
 
@@ -270,6 +307,7 @@ async function transferCoins() {
             showNotification(data.message, 'success');
             
             // Update balance
+       
             const walletBalance = document.getElementById('wallet-balance');
             const currentBalance = parseInt(walletBalance.textContent);
             walletBalance.textContent = (currentBalance - parseInt(amount)).toLocaleString();
