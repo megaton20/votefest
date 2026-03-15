@@ -27,7 +27,6 @@ class adminServices {
   static async getDashboard(req) {
     const userId = req.user.id
     try {
-      let allUser = await User.lisAll()
       const stats = await Admin.stats();
 
 
@@ -35,7 +34,6 @@ class adminServices {
       return {
         success: true,
         data: {
-          allUser,
           stats,
         }
       };

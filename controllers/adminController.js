@@ -4,8 +4,10 @@ const adminServices = require('../services/adminServices');
 exports.adminDashboard = async (req, res) => {
 
   try {
+    console.log("result");
     const result = await adminServices.getDashboard(req);
 
+    
     // handle errors
 
     if (!result.success) {

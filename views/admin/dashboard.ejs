@@ -1,183 +1,82 @@
-<%- include('../partials/sidenav') %>
-<%- include('../partials/topnav') %>
-
+<%- include('../partials/navback') %>
 <!-- Admin Dashboard -->
-<section class="container admin-dashboard">
-    <div class="dashboard-header">
-        <h2 class="dashboard-title">
-            <span class="dashboard-icon">👑</span>
-            Admin Dashboard
-        </h2>
-        <div class="dashboard-actions">
-            <a href="/chat/admin" class="action-btn inbox-btn">
-                <span class="action-icon">📨</span>
-                <span class="action-text">View Inbox</span>
-                <% if (unreadCount && unreadCount > 0) { %>
-                    <span class="action-badge"><%= unreadCount %></span>
-                <% } %>
-            </a>
-            <a href="/users" class="action-btn users-btn">
-                <span class="action-icon">👥</span>
-                <span class="action-text">Manage Users</span>
-            </a>
-        </div>
-    </div>
 
-    <div class="dashboard-stats">
-        <div class="stat-card">
-            <div class="stat-icon total-users">
-                <span>👥</span>
-            </div>
-            <div class="stat-content">
-                <h3 class="stat-number"><%= stats?.totalUsers || 0 %></h3>
-                <p class="stat-label">Total Users</p>
-            </div>
-            <div class="stat-trend">
-                <span class="trend-up">+12%</span>
-                <span>this month</span>
-            </div>
-        </div>
+<main class="container mx-auto px-4 pt-20 pb-16">
 
-        <div class="stat-card">
-            <div class="stat-icon total-messages">
-                <span>💬</span>
-            </div>
-            <div class="stat-content">
-                <h3 class="stat-number"><%= stats?.totalMessages || 0 %></h3>
-                <p class="stat-label">Total Messages</p>
-            </div>
-            <div class="stat-trend">
-                <span class="trend-up">+25%</span>
-                <span>this month</span>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon unread-messages">
-                <span>📩</span>
-            </div>
-            <div class="stat-content">
-                <h3 class="stat-number"><%= stats?.unreadMessages || 0 %></h3>
-                <p class="stat-label">Unread Messages</p>
-            </div>
-            <div class="stat-trend">
-                <% if (stats?.unreadMessages > 0) { %>
-                    <span class="trend-alert">Attention!</span>
-                <% } else { %>
-                    <span class="trend-good">All caught up!</span>
-                <% } %>
+    <section class="container admin-dashboard">
+        <div class="dashboard-header">
+            
+            <div class="dashboard-actions">
+                <a href="/chat/admin" class="action-btn inbox-btn">
+                    <span class="action-icon">📨</span>
+                    <span class="action-text">View Inbox</span>
+                 
+                </a>
+                <a href="/users" class="action-btn users-btn">
+                    <span class="action-icon">👥</span>
+                    <span class="action-text">Manage Users</span>
+                </a>
             </div>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-icon recent-activity">
-                <span>📊</span>
+    
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon total-users">
+                    <span>👥</span>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number"><%= stats?.totalUsers || 0 %></h3>
+                    <p class="stat-label">Total Users</p>
+                </div>
+                <div class="stat-trend">
+                    <span class="trend-up">+12%</span>
+                    <span>this month</span>
+                </div>
             </div>
-            <div class="stat-content">
-                <h3 class="stat-number"><%= stats?.activeUsers || 0 %></h3>
-                <p class="stat-label">Active Users</p>
+    
+            <div class="stat-card">
+                <div class="stat-icon total-messages">
+                    <span>💬</span>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number"><%= stats?.totalMessages || 0 %></h3>
+                    <p class="stat-label">Total application</p>
+                </div>
+                <div class="stat-trend">
+                    <span class="trend-up">+25%</span>
+                    <span>this month</span>
+                </div>
             </div>
-            <div class="stat-trend">
-                <span class="trend-up">+8%</span>
-                <span>today</span>
+    
+            <div class="stat-card">
+                <div class="stat-icon unread-messages">
+                    <span>📩</span>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number"><%= stats?.unreadMessages || 0 %></h3>
+                    <p class="stat-label">Total votes</p>
+                </div>
+           
             </div>
-        </div>
-    </div>
-
-    <div class="dashboard-content">
-        <!-- Recent Messages -->
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h3 class="section-title">
-                    <span class="section-icon">📨</span>
-                    Recent Messages
-                </h3>
-                <a href="/chat/admin" class="section-link">View All →</a>
-            </div>
-            <div class="section-content">
-                <% if (recentMessages && recentMessages.length > 0) { %>
-                    <div class="messages-list">
-                        <% recentMessages.forEach(function(message) { %>
-                            <div class="message-item">
-                                <div class="message-avatar">
-                                    <div class="avatar-small">
-                                        <span><%= message.username?.charAt(0).toUpperCase() || 'A' %></span>
-                                    </div>
-                                </div>
-                                <div class="message-details">
-                                    <div class="message-header">
-                                        <h4 class="message-user"><%= message.username || 'Anonymous' %></h4>
-                                        <span class="message-time">
-                                            <%= new Date(message.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
-                                        </span>
-                                    </div>
-                                    <p class="message-preview">
-                                        <%= message.content.length > 100 ? message.content.substring(0, 100) + '...' : message.content %>
-                                    </p>
-                                    <div class="message-meta">
-                                        <% if (!message.is_read) { %>
-                                            <span class="message-status unread">Unread</span>
-                                        <% } else { %>
-                                            <span class="message-status read">Read</span>
-                                        <% } %>
-                                        <a href="/chat/admin/user/<%= message.user_id %>" class="message-action">View Chat</a>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }); %>
-                    </div>
-                <% } else { %>
-                    <div class="empty-section">
-                        <div class="empty-icon">📭</div>
-                        <p class="empty-text">No recent messages</p>
-                    </div>
-                <% } %>
+    
+            <div class="stat-card">
+                <div class="stat-icon recent-activity">
+                    <span>📊</span>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-number"><%= stats?.activeUsers || 0 %></h3>
+                    <p class="stat-label">Active Users</p>
+                </div>
+                <div class="stat-trend">
+                    <span class="trend-up">+8%</span>
+                    <span>today</span>
+                </div>
             </div>
         </div>
-
-        <!-- Recent Users -->
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h3 class="section-title">
-                    <span class="section-icon">👥</span>
-                    Recent Users
-                </h3>
-                <a href="/users" class="section-link">View All →</a>
-            </div>
-            <div class="section-content">
-                <% if (recentUsers && recentUsers.length > 0) { %>
-                    <div class="users-list">
-                        <% recentUsers.forEach(function(user) { %>
-                            <div class="user-item">
-                                <div class="user-avatar">
-                                    <div class="avatar-small">
-                                        <span><%= user.username?.charAt(0).toUpperCase() || 'U' %></span>
-                                    </div>
-                                </div>
-                                <div class="user-details">
-                                    <h4 class="user-name"><%= user.username || 'Anonymous User' %></h4>
-                                    <div class="user-meta">
-                                        <span class="user-joined">
-                                            Joined <%= new Date(user.created_at).toLocaleDateString() %>
-                                        </span>
-                                        <span class="user-role <%= user.role %>">
-                                            <%= user.role || 'user' %>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }); %>
-                    </div>
-                <% } else { %>
-                    <div class="empty-section">
-                        <div class="empty-icon">👤</div>
-                        <p class="empty-text">No recent users</p>
-                    </div>
-                <% } %>
-            </div>
-        </div>
-    </div>
-</section>
+    
+      
+    </section>
+</main>
 
 <style>
 /* Admin Dashboard Container */

@@ -1,23 +1,9 @@
-<nav class="bg-white shadow-lg fixed top-0 w-full z-50">
-    <div class="container mx-auto px-4 py-3">
-        <div class="flex justify-between items-center">
-            <a href="/" class="flex items-center space-x-2">
-                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                <span class="text-xl font-bold text-gray-800">Wallet</span>
-            </a>
-            <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-600">Welcome,</span>
-                <span class="font-semibold text-purple-700"><%= user.username %></span>
-            </div>
-        </div>
-    </div>
-</nav>
+<%- include('./partials/navback') %>
+
 
 <main class="container mx-auto px-4 pt-20 pb-16 max-w-4xl">
     <!-- Balance Card -->
-    <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
+    <div class="bg-gradient-to-r from-green-600 to-yellow-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
         <div class="flex justify-between items-start">
             <div>
                 <p class="text-purple-100 mb-1">Available Balance</p>
@@ -118,13 +104,13 @@
                         <div class="w-10 h-10 rounded-full flex items-center justify-center 
                             <%= tx.type === 'deposit' ? 'bg-green-100 text-green-600' : 
                                tx.type === 'transfer' ? 'bg-blue-100 text-blue-600' : 
-                               tx.type === 'vote' ? 'bg-purple-100 text-purple-600' : 
+                               tx.type === 'vote' ? 'bg-green-100 text-purple-600' : 
                                tx.type === 'reward' ? 'bg-yellow-100 text-yellow-600' : 
                                'bg-gray-100 text-gray-600' %>">
-                            <%= tx.type === 'deposit' ? '💰' : 
-                               tx.type === 'transfer' ? '🔄' : 
-                               tx.type === 'vote' ? '🗳️' : 
-                               tx.type === 'reward' ? '🎁' : '💬' %>
+                            <%= tx.type === 'deposit' ? '' : 
+                               tx.type === 'transfer' ? '' : 
+                               tx.type === 'vote' ? '' : 
+                               tx.type === 'reward' ? '' : '' %>
                         </div>
                         <div>
                             <div class="font-medium text-gray-800 capitalize"><%= tx.type %></div>

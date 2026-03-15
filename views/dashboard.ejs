@@ -8,7 +8,7 @@
                 </svg>
             </a>
             <a href="/wallet" class="flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-lg">
-                <span class="text-purple-700 font-semibold" id="coin-balance"><%= Number(dashboard.balance).toLocaleString("en-US") %></span>
+                <span class="text-green-700 font-semibold" id="coin-balance"><%= Number(dashboard.balance).toLocaleString("en-US") %></span>
                 <span class="text-gray-600">coins</span>
             </a>
         </div>
@@ -17,7 +17,7 @@
 
 <main class="container mx-auto px-4 pt-20 pb-16 max-w-4xl">
     <!-- Profile Card -->
-    <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
+    <div class="bg-gradient-to-r from-green-600 to-yellow-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -39,8 +39,8 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-xl shadow-lg p-6">
             <div class="flex items-center justify-between mb-2">
-                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
@@ -83,8 +83,8 @@
                 <% recentVotes.forEach(vote => { %>
                 <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
                     <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span class="text-purple-600">🎭</span>
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <span class="text-green-600">🎭</span>
                         </div>
                         <div>
                             <div class="font-medium text-gray-800"><%= vote.contestant_name %></div>
@@ -92,7 +92,7 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="font-semibold text-purple-700">+<%= Number(vote.vote_count).toLocaleString("en-US") %> votes</div>
+                        <div class="font-semibold text-green-700">+<%= Number(vote.vote_count).toLocaleString("en-US") %> votes</div>
                         <div class="text-xs text-gray-500"><%= Number(vote.coins_spent).toLocaleString("en-US") %> coins</div>
                     </div>
                 </div>
@@ -100,7 +100,7 @@
             </div>
         <% } else { %>
             <p class="text-center text-gray-500 py-4">No votes yet. Start voting now!</p>
-            <a href="/" class="block w-full text-center mt-4 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+            <a href="/" class="block w-full text-center mt-4 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-purple-700 transition">
                 Browse Contestants
             </a>
         <% } %>
