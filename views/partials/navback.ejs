@@ -7,9 +7,15 @@
                 </svg>
             </a>
             <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-600">Connected As - </span>
-                <span class="font-semibold text-purple-700"><%= user.username %></span>
+                 <% if (user) { %>
+                    <span class="text-sm text-gray-600">Connected As - </span>
+                    <span class="font-semibold text-green-700"><a href="/dashboard"><%= user.username %></a></span>
+                    <% } else { %>
+                    <a href="/auth/login" class="px-4 py-2 text-green-600 hover:text-green-800">Login</a>
+                    <a href="/auth/register" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Register</a>
+                <% } %>
             </div>
         </div>
     </div>
 </nav>
+
