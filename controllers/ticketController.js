@@ -1,6 +1,5 @@
 const pool = require('../config/db');
 const PaymentService = require('../services/PaymentService');
-const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 
@@ -16,11 +15,20 @@ class TicketController {
       table10: { name: 'Table for 10', price: 25000, capacity: 10, type: 'table' },
       table15: { name: 'Table for 15', price: 35000, capacity: 15, type: 'table' }
     };
+
+    // ============= ENVIRONMENT DETECTION =============
+    this.isLive = process.env.PAYSTACK_SECRET_KEY?.startsWith('sk_live_');
+    this.environment = this.isLive ? 'LIVE' : 'TEST';
+    
+    console.log(`🎫 TicketController initialized in ${this.environment} mode`);
   }
 
   // ============= USER TICKET PAGES =============
 
   async getTickets(req, res) {
+    if (!req.user) {
+      return res.redirect('/auth/login');
+    }
 
     const userId = req.user.id;
     const userEmail = req.user.email;
@@ -38,7 +46,7 @@ class TicketController {
         ORDER BY t.created_at DESC
       `, [userId]);
 
-      // Get individual tickets assigned to this user (by user_id OR email)
+      // Get individual tickets assigned to this user
       const myTickets = await pool.query(`
         SELECT it.*, t.ticket_category, t.purchaser_id,
                u.username as purchaser_name,
@@ -89,6 +97,7 @@ class TicketController {
       const totalAmount = category.price;
 
       try {
+        // PaymentService now handles split codes automatically based on environment
         const payment = await this.paymentService.initializeTransaction(
           purchaserEmail,
           totalAmount,
@@ -96,7 +105,8 @@ class TicketController {
             purchaserId,
             type: 'ticket_purchase',
             ticketCategory,
-            isSingle: true
+            isSingle: true,
+            environment: this.environment
           }
         );
 
@@ -197,6 +207,7 @@ class TicketController {
     const totalAmount = category.price;
 
     try {
+      // PaymentService handles split automatically
       const payment = await this.paymentService.initializeTransaction(
         purchaserEmail,
         totalAmount,
@@ -210,7 +221,8 @@ class TicketController {
             email: a.email,
             wallet: a.walletAccount,
             userId: a.userId
-          }))
+          })),
+          environment: this.environment
         }
       );
 
@@ -241,114 +253,88 @@ class TicketController {
     }
   }
 
- async verifyTicketPurchase(req, res) {
-  if (!req.user) {
-    return res.status(401).json({ success: false, error: 'Not authenticated' });
-  }
+  async verifyTicketPurchase(req, res) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
 
-  const { reference } = req.query;
+    const { reference } = req.query;
 
-  if (!reference) {
-    return res.status(400).json({ success: false, error: 'No payment reference provided' });
-  }
+    if (!reference) {
+      return res.status(400).json({ success: false, error: 'No payment reference provided' });
+    }
 
-  const pendingTicket = req.session.pendingTicket;
+    const pendingTicket = req.session.pendingTicket;
 
-  if (!pendingTicket || pendingTicket.reference !== reference) {
-    return res.status(400).json({
-      success: false,
-      error: 'Session expired. Please try again.'
-    });
-  }
+    if (!pendingTicket || pendingTicket.reference !== reference) {
+      return res.status(400).json({
+        success: false,
+        error: 'Session expired. Please try again.'
+      });
+    }
 
-  try {
-    const verification = await this.paymentService.verifyTransaction(reference);
+    try {
+      const verification = await this.paymentService.verifyTransaction(reference);
 
-    if (verification.data && verification.data.status === 'success') {
-      const client = await pool.connect();
+      if (verification.data && verification.data.status === 'success') {
+        const client = await pool.connect();
 
-      try {
-        await client.query('BEGIN');
+        try {
+          await client.query('BEGIN');
 
-        const existing = await client.query(
-          'SELECT * FROM tickets WHERE paystack_reference = $1',
-          [reference]
-        );
-
-        if (existing.rows.length > 0) {
-          await client.query('ROLLBACK');
-          return res.json({ success: false, error: 'Ticket already processed' });
-        }
-
-        const ticketId = uuidv4();
-        const { ticketCategory, totalAmount, purchaserId, purchaserName } = pendingTicket;
-        const category = this.ticketPrices[ticketCategory];
-
-        // Create main ticket record
-        await client.query(
-          `INSERT INTO tickets 
-           (id, purchaser_id, ticket_category, quantity, total_amount, paystack_reference, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-          [ticketId, purchaserId, ticketCategory, category.capacity, totalAmount, reference]
-        );
-
-        const individualTickets = [];
-
-        // ===== SINGLE TICKET VERIFICATION =====
-        if (pendingTicket.isSingle) {
-          const individualId = uuidv4();
-
-          const qrData = JSON.stringify({
-            ticketId: individualId,
-            parentId: ticketId,
-            name: req.user.username,
-            email: req.user.email,
-            type: ticketCategory,
-            event: 'VoteFest 2024'
-          });
-
-          // Create scan URL for external scanner
-          const scanUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/scanner/verify/${individualId}`;
-          const qrCodeUrl = await this.paymentService.generateQRCode(scanUrl);
-          const qrCodeHash = crypto.createHash('md5').update(scanUrl).digest('hex');
-
-          await client.query(
-            `INSERT INTO individual_tickets 
-             (id, parent_ticket_id, user_id, wallet_account, attendee_name, attendee_email, 
-              ticket_type, qr_code_url, qr_code_hash, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
-            [
-              individualId,
-              ticketId,
-              purchaserId,
-              req.user.wallet_account,
-              req.user.username,
-              req.user.email,
-              ticketCategory,
-              qrCodeUrl,
-              qrCodeHash
-            ]
+          const existing = await client.query(
+            'SELECT * FROM tickets WHERE paystack_reference = $1',
+            [reference]
           );
 
-          individualTickets.push({
-            id: individualId,
-            email: req.user.email,
-            userId: purchaserId,
-            name: req.user.username,
-            isRegistered: true
-          });
+          if (existing.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.json({ success: false, error: 'Ticket already processed' });
+          }
 
-        // ===== TABLE TICKET VERIFICATION =====
-        } else if (pendingTicket.isTable) {
-          for (let i = 0; i < pendingTicket.attendees.length; i++) {
-            const attendee = pendingTicket.attendees[i];
+          const ticketId = uuidv4();
+          const { ticketCategory, totalAmount, purchaserId, purchaserName } = pendingTicket;
+          const category = this.ticketPrices[ticketCategory];
+
+          // Create main ticket record
+          await client.query(
+            `INSERT INTO tickets 
+             (id, purchaser_id, ticket_category, quantity, total_amount, paystack_reference, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+            [ticketId, purchaserId, ticketCategory, category.capacity, totalAmount, reference]
+          );
+
+          // Store split information if available (from verification)
+          if (verification.data.split) {
+            await client.query(`
+              CREATE TABLE IF NOT EXISTS payment_splits (
+                id SERIAL PRIMARY KEY,
+                payment_reference VARCHAR(100) UNIQUE,
+                split_config JSONB,
+                environment VARCHAR(10),
+                created_at TIMESTAMP DEFAULT NOW()
+              )
+            `);
+
+            await client.query(
+              `INSERT INTO payment_splits 
+               (payment_reference, split_config, environment, created_at)
+               VALUES ($1, $2, $3, NOW())`,
+              [reference, JSON.stringify(verification.data.split), this.environment]
+            );
+          }
+
+          const individualTickets = [];
+
+          // ===== SINGLE TICKET VERIFICATION =====
+          if (pendingTicket.isSingle) {
             const individualId = uuidv4();
 
             const qrData = JSON.stringify({
               ticketId: individualId,
               parentId: ticketId,
-              name: attendee.fullName,
-              email: attendee.email,
+              name: req.user.username,
+              email: req.user.email,
               type: ticketCategory,
               event: 'VoteFest 2024'
             });
@@ -366,10 +352,10 @@ class TicketController {
               [
                 individualId,
                 ticketId,
-                attendee.userId,
-                attendee.walletAccount,
-                attendee.fullName,
-                attendee.email,
+                purchaserId,
+                req.user.wallet_account,
+                req.user.username,
+                req.user.email,
                 ticketCategory,
                 qrCodeUrl,
                 qrCodeHash
@@ -378,99 +364,153 @@ class TicketController {
 
             individualTickets.push({
               id: individualId,
-              email: attendee.email,
-              userId: attendee.userId,
-              name: attendee.fullName,
-              isRegistered: !!attendee.userId
+              email: req.user.email,
+              userId: purchaserId,
+              name: req.user.username,
+              isRegistered: true
             });
 
-            // Create notification for registered users
-            if (attendee.userId && this.socketService) {
-              const notificationId = uuidv4();
+          // ===== TABLE TICKET VERIFICATION =====
+          } else if (pendingTicket.isTable) {
+            for (let i = 0; i < pendingTicket.attendees.length; i++) {
+              const attendee = pendingTicket.attendees[i];
+              const individualId = uuidv4();
+
+              const qrData = JSON.stringify({
+                ticketId: individualId,
+                parentId: ticketId,
+                name: attendee.fullName,
+                email: attendee.email,
+                type: ticketCategory,
+                event: 'VoteFest 2024'
+              });
+
+              // Create scan URL for external scanner
+              const scanUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/scanner/verify/${individualId}`;
+              const qrCodeUrl = await this.paymentService.generateQRCode(scanUrl);
+              const qrCodeHash = crypto.createHash('md5').update(scanUrl).digest('hex');
+
               await client.query(
-                `INSERT INTO notifications 
-                 (id, user_id, type, title, message, data, created_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                `INSERT INTO individual_tickets 
+                 (id, parent_ticket_id, user_id, wallet_account, attendee_name, attendee_email, 
+                  ticket_type, qr_code_url, qr_code_hash, created_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
                 [
-                  notificationId,
+                  individualId,
+                  ticketId,
                   attendee.userId,
-                  'ticket_received',
-                  '🎫 You received a ticket!',
-                  `${purchaserName} added you to a ${category.name} ticket`,
-                  JSON.stringify({
-                    ticketId: individualId,
-                    parentTicketId: ticketId,
-                    purchaserName,
-                    ticketType: ticketCategory
-                  })
+                  attendee.walletAccount,
+                  attendee.fullName,
+                  attendee.email,
+                  ticketCategory,
+                  qrCodeUrl,
+                  qrCodeHash
                 ]
               );
 
-              this.socketService.sendToUser(attendee.userId, 'ticket_received', {
-                ticketId: individualId,
-                purchaserName: purchaserName,
-                ticketType: category.name,
-                message: `${purchaserName} added you to a ${category.name} ticket`,
-                timestamp: new Date().toISOString()
+              individualTickets.push({
+                id: individualId,
+                email: attendee.email,
+                userId: attendee.userId,
+                name: attendee.fullName,
+                isRegistered: !!attendee.userId
               });
+
+              // Create notification for registered users
+              if (attendee.userId && this.socketService) {
+                const notificationId = uuidv4();
+                await client.query(
+                  `INSERT INTO notifications 
+                   (id, user_id, type, title, message, data, created_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+                  [
+                    notificationId,
+                    attendee.userId,
+                    'ticket_received',
+                    '🎫 You received a ticket!',
+                    `${purchaserName} added you to a ${category.name} ticket`,
+                    JSON.stringify({
+                      ticketId: individualId,
+                      parentTicketId: ticketId,
+                      purchaserName,
+                      ticketType: ticketCategory
+                    })
+                  ]
+                );
+
+                this.socketService.sendToUser(attendee.userId, 'ticket_received', {
+                  ticketId: individualId,
+                  purchaserName: purchaserName,
+                  ticketType: category.name,
+                  message: `${purchaserName} added you to a ${category.name} ticket`,
+                  timestamp: new Date().toISOString()
+                });
+              }
             }
           }
-        }
 
-        await client.query('COMMIT');
+          await client.query('COMMIT');
 
-        // Notify purchaser
-        if (this.socketService) {
-          this.socketService.sendToUser(purchaserId, 'tickets_distributed', {
-            count: individualTickets.length,
+          // Notify purchaser
+          if (this.socketService) {
+            this.socketService.sendToUser(purchaserId, 'tickets_distributed', {
+              count: individualTickets.length,
+              registeredCount: individualTickets.filter(t => t.isRegistered).length,
+              emailCount: individualTickets.filter(t => !t.isRegistered).length,
+              message: `Your ${category.name} ticket${individualTickets.length > 1 ? 's have' : ' has'} been created`,
+              timestamp: new Date().toISOString()
+            });
+          }
+
+          delete req.session.pendingTicket;
+
+          // Log split information from verification
+          const splitInfo = this.paymentService.getSplitInfo(verification);
+          if (splitInfo) {
+            console.log(`💰 [${this.environment}] Payment split details:`, splitInfo);
+          }
+
+          return res.json({
+            success: true,
+            message: `${category.name} purchased successfully!`,
+            ticketId,
+            ticketCategory: category.name,
+            recipientCount: individualTickets.length,
             registeredCount: individualTickets.filter(t => t.isRegistered).length,
-            emailCount: individualTickets.filter(t => !t.isRegistered).length,
-            message: `Your ${category.name} ticket${individualTickets.length > 1 ? 's have' : ' has'} been created`,
-            timestamp: new Date().toISOString()
+            emailCount: individualTickets.filter(t => !t.isRegistered).length
           });
+
+        } catch (dbError) {
+          await client.query('ROLLBACK');
+          throw dbError;
+        } finally {
+          client.release();
         }
 
-        delete req.session.pendingTicket;
-
-        return res.json({
-          success: true,
-          message: `${category.name} purchased successfully!`,
-          ticketId,
-          ticketCategory: category.name,
-          recipientCount: individualTickets.length,
-          registeredCount: individualTickets.filter(t => t.isRegistered).length,
-          emailCount: individualTickets.filter(t => !t.isRegistered).length
-        });
-
-      } catch (dbError) {
-        await client.query('ROLLBACK');
-        throw dbError;
-      } finally {
-        client.release();
+      } else {
+        return res.json({ success: false, error: 'Payment verification failed' });
       }
 
-    } else {
-      return res.json({ success: false, error: 'Payment verification failed' });
+    } catch (error) {
+      console.error('Ticket verification error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Verification failed: ' + error.message
+      });
     }
-
-  } catch (error) {
-    console.error('Ticket verification error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Verification failed: ' + error.message
-    });
   }
-}
+
+  // ============= API METHODS =============
 
   async getMyTickets(req, res) {
     if (!req.user) {
       return res.status(401).json({ success: false, error: 'Not authenticated' });
     }
 
-    const userId = req.user.id;
-    const userEmail = req.user.email;
-
     try {
+      const userId = req.user.id;
+      const userEmail = req.user.email;
+
       const tickets = await pool.query(`
         SELECT it.*, t.ticket_category, t.purchaser_id,
                u.username as purchaser_name,
@@ -487,10 +527,12 @@ class TicketController {
         success: true,
         tickets: tickets.rows
       });
-
     } catch (error) {
       console.error('Get my tickets error:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch tickets' });
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch tickets'
+      });
     }
   }
 
@@ -499,11 +541,11 @@ class TicketController {
       return res.status(401).json({ success: false, error: 'Not authenticated' });
     }
 
-    const { ticketId } = req.params;
-    const userId = req.user.id;
-    const userEmail = req.user.email;
-
     try {
+      const { ticketId } = req.params;
+      const userId = req.user.id;
+      const userEmail = req.user.email;
+
       const ticket = await pool.query(`
         SELECT it.*, t.ticket_category, t.purchaser_id,
                u.username as purchaser_name,
@@ -514,70 +556,6 @@ class TicketController {
         JOIN users u ON u.id = t.purchaser_id
         WHERE it.id = $1 AND (it.user_id = $2 OR it.attendee_email = $3)
       `, [ticketId, userId, userEmail]);
-
-      if (ticket.rows.length === 0) {
-        return res.status(404).json({ success: false, error: 'Ticket not found' });
-      }
-
-      res.json({
-        success: true,
-        ticket: ticket.rows[0]
-      });
-
-    } catch (error) {
-      console.error('Get ticket error:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch ticket' });
-    }
-  }
-
-
-  async getMyTickets(req, res) {
-
-    try {
-      const userId = req.user.id;
-      const userEmail = req.user.email;
-
-      const tickets = await pool.query(`
-      SELECT it.*, t.ticket_category, t.purchaser_id,
-             u.username as purchaser_name,
-             u.email as purchaser_email,
-             CASE WHEN it.user_id IS NOT NULL THEN true ELSE false END as is_registered
-      FROM individual_tickets it
-      JOIN tickets t ON t.id = it.parent_ticket_id
-      JOIN users u ON u.id = t.purchaser_id
-      WHERE it.user_id = $1 OR it.attendee_email = $2
-      ORDER BY it.created_at DESC
-    `, [userId, userEmail]);
-
-      res.json({
-        success: true,
-        tickets: tickets.rows
-      });
-    } catch (error) {
-      console.error('Get my tickets error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch tickets'
-      });
-    }
-  }
-  async getTicketDetails(req, res) {
-
-    try {
-      const { ticketId } = req.params;
-      const userId = req.user.id;
-      const userEmail = req.user.email;
-
-      const ticket = await pool.query(`
-      SELECT it.*, t.ticket_category, t.purchaser_id,
-             u.username as purchaser_name,
-             (SELECT COUNT(*) FROM individual_tickets WHERE parent_ticket_id = t.id) as group_size,
-             CASE WHEN it.user_id IS NOT NULL THEN true ELSE false END as is_registered
-      FROM individual_tickets it
-      JOIN tickets t ON t.id = it.parent_ticket_id
-      JOIN users u ON u.id = t.purchaser_id
-      WHERE it.id = $1 AND (it.user_id = $2 OR it.attendee_email = $3)
-    `, [ticketId, userId, userEmail]);
 
       if (ticket.rows.length === 0) {
         return res.status(404).json({
@@ -597,10 +575,10 @@ class TicketController {
         error: 'Failed to fetch ticket'
       });
     }
-
   }
 
   // ============= ADMIN VERIFICATION METHODS =============
+  // ... (all admin methods remain exactly the same - no changes needed)
 
   async getAdminDashboard(req, res) {
     if (!req.user || !req.user.is_admin) {
@@ -631,16 +609,16 @@ class TicketController {
       `);
 
       const validTickets = await pool.query(`
-  SELECT it.*, t.ticket_category, u.username as purchaser_name,
-         u.username as username, -- Add this for compatibility
-         t.paystack_reference, -- Make sure this is selected
-         CASE WHEN it.user_id IS NOT NULL THEN true ELSE false END as is_registered
-  FROM individual_tickets it
-  JOIN tickets t ON t.id = it.parent_ticket_id
-  JOIN users u ON u.id = t.purchaser_id
-  WHERE it.is_checked_in = false
-  ORDER BY it.created_at DESC
-`);
+        SELECT it.*, t.ticket_category, u.username as purchaser_name,
+               u.username as username,
+               t.paystack_reference,
+               CASE WHEN it.user_id IS NOT NULL THEN true ELSE false END as is_registered
+        FROM individual_tickets it
+        JOIN tickets t ON t.id = it.parent_ticket_id
+        JOIN users u ON u.id = t.purchaser_id
+        WHERE it.is_checked_in = false
+        ORDER BY it.created_at DESC
+      `);
 
       res.render('admin/dashboard', {
         user: req.user,

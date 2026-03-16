@@ -7,10 +7,10 @@ class WalletController {
   constructor(socketService) {
     this.socketService = socketService;
     this.paystackService = new PaystackService();
+    // ✅ NO hardcoded providers - Paystack handles the split via split_code
   }
-  
+
   async getWallet(req, res) {
-    
     const userId = req.user.id
     
     try {
@@ -35,35 +35,36 @@ class WalletController {
     const userEmail = req.user.email;
     
     if (!amount || amount < 100) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Minimum amount is ₦100' 
-      });
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Minimum amount is ₦100' 
+        });
     }
     
     try {
-      const payment = await this.paystackService.initializeServerTransaction(
-        userEmail,
-        amount,
-        { 
-          userId, 
-          type: 'wallet_funding',
-          username: req.user.username
-        }
-      );
-      
-      res.json({
-        success: true,
-        authorization_url: payment.data.authorization_url,
-        reference: payment.data.reference
-      });
-      
+        // ✅ This already uses split_code from PaystackService
+        const payment = await this.paystackService.initializeWalletTransaction(
+            userEmail,
+            amount,
+            { 
+                userId, 
+                type: 'wallet_funding',
+                username: req.user.username
+            }
+        );
+        
+        res.json({
+            success: true,
+            authorization_url: payment.data.authorization_url,
+            reference: payment.data.reference
+        });
+        
     } catch (error) {
-      console.error('Payment initialization error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Payment initialization failed. Please try again.' 
-      });
+        console.error('Payment initialization error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message || 'Payment initialization failed. Please try again.' 
+        });
     }
   }
   
@@ -80,7 +81,7 @@ class WalletController {
       
       if (verification.data.status === 'success') {
         const amount = verification.data.amount / 100;
-        const coins =  Math.floor(amount /20); 
+        const coins = Math.floor(amount / 20); 
         
         const wallet = new Wallet(userId);
         const result = await wallet.addCoins(coins, 'deposit', {
@@ -90,10 +91,26 @@ class WalletController {
           paid_at: verification.data.paid_at
         });
         
+        // ✅ Log split information from the verification
+        if (verification.data.split) {
+          console.log('💰 Wallet funding split details:', {
+            amount: amount,
+            mainShare: verification.data.split.shares?.integration / 100 || 0,
+            subaccountShares: verification.data.split.shares?.subaccounts?.map(s => s / 100) || []
+          });
+          
+          // Store split information for reconciliation
+          await pool.query(`
+            INSERT INTO payment_splits 
+            (payment_reference, split_config, amount, created_at)
+            VALUES ($1, $2, $3, NOW())
+          `, [reference, JSON.stringify(verification.data.split), amount]);
+        }
+        
         // Send real-time update
         this.socketService.sendToUser(userId, 'wallet_update', {
           newBalance: result.newBalance,
-          message: `✅ Wallet funded with ${coins} coins (₦${amount})`
+          message: `Wallet funded with ${coins} coins (₦${amount})`
         });
         
         this.socketService.sendToUser(userId, 'purchase_update', {
@@ -143,7 +160,6 @@ class WalletController {
         [receiverWallet]
       );
     
-      
       if (receiverResult.rows.length > 0) {
         const receiverId = receiverResult.rows[0].id;
         const receiverWalletObj = new Wallet(receiverId);
@@ -151,14 +167,13 @@ class WalletController {
         
         this.socketService.sendToUser(receiverId, 'wallet_update', {
           newBalance: receiverBalance,
-
           message: `Received ${amount} coins from ${username}`
         });
       }
       
       res.json({
         success: true,
-        message: ` Successfully transferred ${amount} coins to ${receiverWallet}`,
+        message: `Successfully transferred ${amount} coins to ${receiverWallet}`,
         transactionRef: transfer.transactionRef,
         newBalance: senderBalance
       });

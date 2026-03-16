@@ -5,7 +5,7 @@ const WalletController = require('../controllers/walletController');
 let walletController;
 
 router.use((req, res, next) => {
-  // console.log(req.app.locals);
+
   if (!walletController) {
     walletController = new WalletController(req.app.locals.socketService);
   }
@@ -18,7 +18,7 @@ router.get('/',  (req, res) => walletController.getWallet(req, res));
 router.post('/fund',  (req, res) => walletController.fundWallet(req, res));
 router.post('/transfer',  (req, res) => walletController.transferCoins(req, res));
 router.get('/verify',  (req, res) => walletController.verifyPayment(req, res));
-// Add this to your wallet routes
+
 router.get('/balance', async (req, res) => {
     try {
         const Wallet = require('../models/Wallet');
