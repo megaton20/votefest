@@ -15,6 +15,20 @@ module.exports = {
     res.redirect('/auth/login')
     return
   },
+  ensureAdmin: function(req, res, next) {
+
+    let isAdmin =  req.user.is_admin
+    
+    if (isAdmin) {
+      return next();
+    }
+
+    req.session.returnTo = req.originalUrl
+ 
+    req.flash("error_msg", "Please sign in to use our resources")
+    res.redirect('/')
+    return
+  },
 
   forwardAuthenticated: function(req, res, next) {
     

@@ -40,7 +40,36 @@ class Ticket {
           created_at TIMESTAMP DEFAULT NOW()
       )
     `;
+
+    const transferTable = `
+    -- Drop existing table if needed
+DROP TABLE IF EXISTS ticket_transfers CASCADE;
+
+-- Ticket transfers table (direct transfer - no acceptance)
+CREATE TABLE IF NOT EXISTS ticket_transfers (
+    id VARCHAR PRIMARY KEY,
+    ticket_id VARCHAR REFERENCES individual_tickets(id) ON DELETE CASCADE,
+    from_user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE,
+    to_user_id VARCHAR REFERENCES users(id),
+    to_wallet_account VARCHAR(20) NOT NULL,
+    status VARCHAR(20) CHECK (status IN ('pending', 'completed', 'failed')),
+    fee_amount DECIMAL(10, 2) DEFAULT 100,
+    fee_reference VARCHAR(100) UNIQUE,
+    fee_paid_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    completed_at TIMESTAMP
+);
+
+    -- Indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_transfers_ticket ON ticket_transfers(ticket_id);
+    CREATE INDEX IF NOT EXISTS idx_transfers_from ON ticket_transfers(from_user_id);
+    CREATE INDEX IF NOT EXISTS idx_transfers_to ON ticket_transfers(to_user_id);
+    CREATE INDEX IF NOT EXISTS idx_transfers_status ON ticket_transfers(status);
+    CREATE INDEX IF NOT EXISTS idx_transfers_fee_ref ON ticket_transfers(fee_reference);
+
+    `
     await createTableIfNotExists('individual_tickets', createIndividualTicketsQuery);
+    await createTableIfNotExists('ticket_transfers', transferTable);
 
     // Create indexes for individual_tickets
     const createIndividualIndexesQuery = `
@@ -51,7 +80,7 @@ class Ticket {
       CREATE INDEX IF NOT EXISTS idx_individual_parent ON individual_tickets(parent_ticket_id);
       CREATE INDEX IF NOT EXISTS idx_individual_checked ON individual_tickets(is_checked_in);
     `;
-    
+
     // Execute indexes separately
     const client = await pool.connect();
     try {
@@ -78,7 +107,7 @@ class Ticket {
       CREATE INDEX IF NOT EXISTS idx_scan_logs_date ON scan_logs(scanned_at);
       CREATE INDEX IF NOT EXISTS idx_scan_logs_ticket ON scan_logs(ticket_id);
     `;
-    
+
     const client2 = await pool.connect();
     try {
       await client2.query(createScanLogsIndexesQuery);
@@ -107,7 +136,7 @@ class Ticket {
       CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
       CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
     `;
-    
+
     const client3 = await pool.connect();
     try {
       await client3.query(createNotificationsIndexesQuery);

@@ -16,19 +16,19 @@ class PaymentService {
     console.log(`🎫 PaymentService initialized in ${this.environment} mode`);
     
     if (this.isLive) {
-      console.log(`📋 Using live ticket split code: ${this.liveSplitCode}`);
+      // console.log(`Using live ticket split code: ${this.liveSplitCode}`);
       if (!this.liveSplitCode) {
-        console.warn('⚠️ WARNING: LIVE_TICKET_SPLIT_CODE not configured! Live ticket sales will fail.');
+        console.warn('WARNING: LIVE_TICKET_SPLIT_CODE not configured! Live ticket sales will fail.');
       }
     } else {
-      console.log('🧪 Test mode: No split code needed - ticket transactions will be simulated');
+      console.log('Test mode: No split code needed - ticket transactions will be simulated');
     }
   }
 
   /**
    * Initialize ticket payment with split configuration
    */
-  async initializeTransaction(email, amount, metadata = {}) {
+  async initializeTransaction(email, amount, metadata = {},callback ) {
     try {
       const payload = {
         email,
@@ -38,21 +38,21 @@ class PaymentService {
           payment_type: 'ticket_purchase',
           environment: this.environment
         },
-        callback_url: `${process.env.CLIENT_URL}/tickets?verify=1`
+        callback_url: `${process.env.CLIENT_URL}/${callback}`
       };
 
-      // ✅ ONLY add split_code in LIVE mode
+      // ONLY add split_code in LIVE mode
       if (this.isLive) {
         if (!this.liveSplitCode) {
           throw new Error('LIVE_TICKET_SPLIT_CODE is not configured for live ticket sales');
         }
         payload.split_code = this.liveSplitCode;
-        console.log('💰 Live ticket transaction with split:', this.liveSplitCode);
+        // console.log('Live ticket transaction with split:', this.liveSplitCode);
       } else {
-        console.log('🧪 Test ticket transaction - no split code needed');
+        console.log(' Test ticket transaction - no split code needed');
       }
 
-      console.log(`📤 ${this.environment} ticket payload:`, JSON.stringify(payload, null, 2));
+      // console.log(`${this.environment} ticket payload:`, JSON.stringify(payload, null, 2));
 
       const response = await axios.post(
         `${this.baseUrl}/transaction/initialize`,
@@ -68,7 +68,7 @@ class PaymentService {
       return response.data;
       
     } catch (error) {
-      console.error(`❌ ${this.environment} ticket payment error:`, error.response?.data || error.message);
+      console.error(` ${this.environment} ticket payment error:`, error.response?.data || error.message);
       throw new Error(error.response?.data?.message || 'Ticket payment initialization failed');
     }
   }
@@ -78,7 +78,7 @@ class PaymentService {
    */
   async verifyTransaction(reference) {
     try {
-      console.log(`🔍 Verifying ${this.environment} ticket payment:`, reference);
+      console.log(`Verifying ${this.environment} ticket payment:`, reference);
       
       const response = await axios.get(
         `${this.baseUrl}/transaction/verify/${reference}`,
@@ -91,13 +91,13 @@ class PaymentService {
 
       // In test mode, split info will be simulated
       if (!this.isLive) {
-        console.log('🧪 Test mode verification - split is simulated');
+        console.log('Test mode verification - split is simulated');
       }
 
       return response.data;
       
     } catch (error) {
-      console.error(`❌ ${this.environment} ticket verification error:`, error.response?.data || error.message);
+      console.error(`${this.environment} ticket verification error:`, error.response?.data || error.message);
       throw new Error('Ticket payment verification failed');
     }
   }

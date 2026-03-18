@@ -13,10 +13,10 @@ class PaystackService {
         // Live mode needs split code, test mode doesn't
         this.liveSplitCode = process.env.LIVE_SPLIT_CODE;
         
-        console.log(`PaystackService initialized in ${this.environment} mode`);
+        // console.log(`PaystackService initialized in ${this.environment} mode`);
         
         if (this.isLive) {
-            console.log(`Using live split code: ${this.liveSplitCode}`);
+            // console.log(`Using live split code: ${this.liveSplitCode}`);
             if (!this.liveSplitCode) {
                 console.warn('WARNING: LIVE_SPLIT_CODE not configured! Live transactions will fail.');
             }
@@ -45,7 +45,7 @@ class PaystackService {
                     throw new Error('LIVE_SPLIT_CODE is not configured for live transactions');
                 }
                 payload.split_code = this.liveSplitCode;
-                console.log('Live transaction with split:');
+                // console.log('Live transaction with split:');
             } else {
                 console.log('Test transaction - no split code needed');
             }

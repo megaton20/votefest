@@ -8,6 +8,10 @@ class TicketController {
     this.paymentService = new PaymentService();
     this.socketService = socketService;
 
+    // Transfer fee configuration - REAL MONEY via Paystack
+  this.transferFee = 100; // ₦100 in naira
+  this.transferFeeKobo = 100 * 100;
+
     this.ticketPrices = {
       regular: { name: 'Regular', price: 2000, capacity: 1, type: 'single' },
       vip: { name: 'VIP', price: 10000, capacity: 1, type: 'single' },
@@ -20,7 +24,6 @@ class TicketController {
     this.isLive = process.env.PAYSTACK_SECRET_KEY?.startsWith('sk_live_');
     this.environment = this.isLive ? 'LIVE' : 'TEST';
     
-    console.log(`🎫 TicketController initialized in ${this.environment} mode`);
   }
 
   // ============= USER TICKET PAGES =============
@@ -98,6 +101,7 @@ class TicketController {
 
       try {
         // PaymentService now handles split codes automatically based on environment
+        let callback= `tickets?verify=1`
         const payment = await this.paymentService.initializeTransaction(
           purchaserEmail,
           totalAmount,
@@ -107,7 +111,8 @@ class TicketController {
             ticketCategory,
             isSingle: true,
             environment: this.environment
-          }
+          },
+          callback
         );
 
         req.session.pendingTicket = {
@@ -254,9 +259,7 @@ class TicketController {
   }
 
   async verifyTicketPurchase(req, res) {
-    if (!req.user) {
-      return res.status(401).json({ success: false, error: 'Not authenticated' });
-    }
+
 
     const { reference } = req.query;
 
@@ -306,15 +309,6 @@ class TicketController {
 
           // Store split information if available (from verification)
           if (verification.data.split) {
-            await client.query(`
-              CREATE TABLE IF NOT EXISTS payment_splits (
-                id SERIAL PRIMARY KEY,
-                payment_reference VARCHAR(100) UNIQUE,
-                split_config JSONB,
-                environment VARCHAR(10),
-                created_at TIMESTAMP DEFAULT NOW()
-              )
-            `);
 
             await client.query(
               `INSERT INTO payment_splits 
@@ -448,7 +442,7 @@ class TicketController {
               }
             }
           }
-
+ 
           await client.query('COMMIT');
 
           // Notify purchaser
@@ -467,7 +461,7 @@ class TicketController {
           // Log split information from verification
           const splitInfo = this.paymentService.getSplitInfo(verification);
           if (splitInfo) {
-            console.log(`💰 [${this.environment}] Payment split details:`, splitInfo);
+            console.log(`[${this.environment}] Payment split details:`, splitInfo);
           }
 
           return res.json({
@@ -578,8 +572,6 @@ class TicketController {
   }
 
   // ============= ADMIN VERIFICATION METHODS =============
-  // ... (all admin methods remain exactly the same - no changes needed)
-
   async getAdminDashboard(req, res) {
     if (!req.user || !req.user.is_admin) {
       return res.status(403).render('error', { error: 'Access denied' });
@@ -955,6 +947,383 @@ class TicketController {
       res.status(500).json({ success: false, error: 'Failed to fetch tickets' });
     }
   }
+  
+  
+  /**
+ * Initiate and complete ticket transfer in one flow
+ */
+
+async transferTicket(req, res) {
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: 'Not authenticated' });
+  }
+
+  const { ticketId, receiverWallet } = req.body;
+  const fromUserId = req.user.id;
+  const fromUserEmail = req.user.email;
+
+  if (!ticketId || !receiverWallet) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Ticket ID and receiver wallet are required' 
+    });
+  }
+
+  // Validate receiver wallet format
+  if (!receiverWallet.match(/^ACC\d{6}$/)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Invalid wallet format. Should be ACC followed by 6 digits' 
+    });
+  }
+
+  const client = await pool.connect();
+ console.log("init Transfer Payment...")
+  try {
+    await client.query('BEGIN');
+
+    // 1. Check if ticket exists and belongs to user
+    const ticketCheck = await client.query(`
+      SELECT it.*, t.ticket_category, t.purchaser_id 
+      FROM individual_tickets it
+      JOIN tickets t ON t.id = it.parent_ticket_id
+      WHERE it.id = $1 AND it.user_id = $2 AND it.is_checked_in = false
+      FOR UPDATE
+    `, [ticketId, fromUserId]);
+
+    if (ticketCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Ticket not found, already checked in, or does not belong to you' 
+      });
+    }
+
+    const ticket = ticketCheck.rows[0];
+
+    // 2. Check if receiver exists
+    const receiverCheck = await client.query(
+      'SELECT id, username, email FROM users WHERE wallet_account = $1',
+      [receiverWallet]
+    );
+
+    if (receiverCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Receiver not found with this wallet account' 
+      });
+    }
+
+    const receiver = receiverCheck.rows[0];
+
+    // 3. Check if user is trying to transfer to themselves
+    if (receiver.id === fromUserId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'You cannot transfer a ticket to yourself' 
+      });
+    }
+
+    // 4. Check for existing pending transfers
+    const existingTransfer = await client.query(`
+      SELECT id FROM ticket_transfers 
+      WHERE ticket_id = $1 AND status = 'pending'
+    `, [ticketId]);
+
+    if (existingTransfer.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'This ticket already has a pending transfer' 
+      });
+    }
+
+    // 5. Create transfer record
+    const transferId = uuidv4();
+    await client.query(`
+      INSERT INTO ticket_transfers 
+      (id, ticket_id, from_user_id, to_user_id, to_wallet_account, status, fee_amount, created_at)
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, NOW())
+    `, [transferId, ticketId, fromUserId, receiver.id, receiverWallet, this.transferFee]);
+
+    await client.query('COMMIT');
+
+    // 6. Initialize Paystack payment for fee with CORRECT callback URL
+   let callback=  `tickets/transfer/verify`
+    const payment = await this.paymentService.initializeTransaction(
+      fromUserEmail,
+      this.transferFee,
+      {
+        type: 'transfer_fee',
+        transferId,
+        ticketId,
+        fromUserId,
+        toUserId: receiver.id,
+        ticketType: ticket.ticket_type,
+        attendeeName: ticket.attendee_name,
+        purpose: 'Ticket transfer fee'
+      },
+      callback 
+      // Note: No splitConfig needed - this is just a fee payment
+    );
+
+    // Update transfer with payment reference
+    await pool.query(`
+      UPDATE ticket_transfers 
+      SET fee_reference = $1
+      WHERE id = $2
+    `, [payment.data.reference, transferId]);
+
+    res.json({
+      success: true,
+      authorization_url: payment.data.authorization_url,
+      reference: payment.data.reference,
+      message: `Proceed to pay ₦${this.transferFee} transfer fee`,
+      transferId
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Transfer initiation error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to initiate transfer' 
+    });
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Verify transfer payment and complete transfer immediately
+ */
+
+async verifyTransferPayment(req, res) {
+  if (!req.user) {
+    return res.redirect('/auth/login?returnTo=' + encodeURIComponent(req.originalUrl));
+  }
+
+    console.log("verify Transfer Payment...")
+
+  const { reference } = req.query;
+  const userId = req.user.id;
+
+  if (!reference) {
+    return res.redirect('/tickets?error=No payment reference provided');
+  }
+
+  try {
+    // First verify payment with Paystack
+    const verification = await this.paymentService.verifyTransaction(reference);
+
+    if (!verification.data || verification.data.status !== 'success') {
+      return res.redirect('/tickets?error=Payment verification failed');
+    }
+
+    console.log(`Payment verified for reference: ${reference}`);
+
+    // Get transfer associated with this payment - removed the from_user_id filter
+    // because the payment reference is unique and should identify the transfer
+    const transferResult = await pool.query(`
+      SELECT t.*, it.attendee_name, it.ticket_type, it.qr_code_url,
+             u_from.username as sender_name,
+             u_to.username as receiver_name,
+             u_from.email as sender_email,
+             u_to.email as receiver_email
+      FROM ticket_transfers t
+      JOIN individual_tickets it ON it.id = t.ticket_id
+      JOIN users u_from ON u_from.id = t.from_user_id
+      JOIN users u_to ON u_to.id = t.to_user_id
+      WHERE t.fee_reference = $1
+    `, [reference]);
+
+    if (transferResult.rows.length === 0) {
+      console.error(`❌ No transfer found for reference: ${reference}`);
+      return res.redirect('/tickets?error=Transfer not found');
+    }
+
+    const transfer = transferResult.rows[0];
+
+    // Verify that the current user is the sender (security check)
+    if (transfer.from_user_id !== userId) {
+      console.error(`❌ User mismatch: transfer owner ${transfer.from_user_id} vs current user ${userId}`);
+      return res.redirect('/tickets?error=Unauthorized access');
+    }
+
+    // Check if transfer is already completed
+    if (transfer.status === 'completed') {
+      return res.redirect('/tickets?success=Ticket already transferred');
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Update ticket ownership - IMMEDIATE transfer
+      const updateResult = await client.query(`
+        UPDATE individual_tickets 
+        SET user_id = $1, wallet_account = $2
+        WHERE id = $3
+        RETURNING id
+      `, [transfer.to_user_id, transfer.to_wallet_account, transfer.ticket_id]);
+
+      if (updateResult.rows.length === 0) {
+        throw new Error('Failed to update ticket ownership');
+      }
+
+      // Update transfer status
+      await client.query(`
+        UPDATE ticket_transfers 
+        SET status = 'completed', fee_paid_at = NOW(), completed_at = NOW()
+        WHERE id = $1
+      `, [transfer.id]);
+
+      // Create notification for receiver (ticket received)
+      const receiverNotifId = uuidv4();
+      await client.query(`
+        INSERT INTO notifications 
+        (id, user_id, type, title, message, data, created_at)
+        VALUES ($1, $2, 'ticket_received', '🎫 Ticket Received!',
+                $3, $4, NOW())
+      `, [
+        receiverNotifId,
+        transfer.to_user_id,
+        `${transfer.sender_name} transferred a ${transfer.ticket_type} ticket to you`,
+        JSON.stringify({
+          ticketId: transfer.ticket_id,
+          transferId: transfer.id,
+          fromUser: transfer.sender_name,
+          ticketType: transfer.ticket_type,
+          attendeeName: transfer.attendee_name,
+          qrCodeUrl: transfer.qr_code_url
+        })
+      ]);
+
+      // Create notification for sender (transfer completed)
+      const senderNotifId = uuidv4();
+      await client.query(`
+        INSERT INTO notifications 
+        (id, user_id, type, title, message, data, created_at)
+        VALUES ($1, $2, 'transfer_completed', '✅ Transfer Completed',
+                $3, $4, NOW())
+      `, [
+        senderNotifId,
+        userId,
+        `Ticket transferred to ${transfer.receiver_name}. ₦${this.transferFee} fee paid.`,
+        JSON.stringify({
+          ticketId: transfer.ticket_id,
+          transferId: transfer.id,
+          toUser: transfer.receiver_name,
+          ticketType: transfer.ticket_type,
+          fee: this.transferFee
+        })
+      ]);
+
+      await client.query('COMMIT');
+
+      // Send real-time notifications via Socket.IO
+      if (this.socketService) {
+        this.socketService.sendToUser(transfer.to_user_id, 'ticket_received', {
+          ticketId: transfer.ticket_id,
+          fromUser: transfer.sender_name,
+          ticketType: transfer.ticket_type,
+          attendeeName: transfer.attendee_name,
+          message: `${transfer.sender_name} transferred a ${transfer.ticket_type} ticket to you`,
+          qrCodeUrl: transfer.qr_code_url
+        });
+
+        this.socketService.sendToUser(userId, 'transfer_completed', {
+          transferId: transfer.id,
+          toUser: transfer.receiver_name,
+          message: `Ticket transferred to ${transfer.receiver_name}. ₦${this.transferFee} fee paid.`
+        });
+      }
+
+      // Log the split information for the fee payment
+      const splitInfo = this.paymentService.getSplitInfo(verification);
+      // if (splitInfo) {
+      //   console.log(`Transfer fee split [${this.environment}]:`, splitInfo);
+      // }
+
+      res.redirect('/tickets?success=Ticket transferred successfully!');
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Transfer completion error:', error);
+      res.redirect('/tickets?error=Transfer failed: ' + error.message);
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('Transfer verification error:', error);
+    res.redirect('/tickets?error=Transfer verification failed');
+  }
+}
+
+/**
+ * Get transfer history
+ */
+async getTransferHistory(req, res) {
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: 'Not authenticated' });
+  }
+
+  const userId = req.user.id;
+
+  try {
+    // Transfers sent by user
+    const sentTransfers = await pool.query(`
+      SELECT t.*, it.attendee_name, it.ticket_type,
+             u.username as receiver_name,
+             to_char(t.created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at_formatted,
+             to_char(t.completed_at, 'YYYY-MM-DD HH24:MI:SS') as completed_at_formatted
+      FROM ticket_transfers t
+      JOIN individual_tickets it ON it.id = t.ticket_id
+      LEFT JOIN users u ON u.id = t.to_user_id
+      WHERE t.from_user_id = $1
+      ORDER BY t.created_at DESC
+      LIMIT 50
+    `, [userId]);
+
+    // Transfers received by user
+    const receivedTransfers = await pool.query(`
+      SELECT t.*, it.attendee_name, it.ticket_type,
+             u.username as sender_name,
+             to_char(t.created_at, 'YYYY-MM-DD HH24:MI:SS') as created_at_formatted,
+             to_char(t.completed_at, 'YYYY-MM-DD HH24:MI:SS') as completed_at_formatted
+      FROM ticket_transfers t
+      JOIN individual_tickets it ON it.id = t.ticket_id
+      JOIN users u ON u.id = t.from_user_id
+      WHERE t.to_user_id = $1
+      ORDER BY t.created_at DESC
+      LIMIT 50
+    `, [userId]);
+
+    res.json({
+      success: true,
+      sent: sentTransfers.rows,
+      received: receivedTransfers.rows,
+      fee: this.transferFee
+    });
+
+  } catch (error) {
+    console.error('Transfer history error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch transfer history' 
+    });
+  }
+}
+
+
+
 }
 
 module.exports = TicketController;
+
+
+
