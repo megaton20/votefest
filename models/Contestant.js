@@ -1,5 +1,6 @@
-const pool  = require('../config/db');
+const pool = require('../config/db');
 const createTableIfNotExists = require('../utils/createTableIfNotExists');
+const { v4: uuidv4 } = require('uuid');
 
 class Contestant {
   constructor(data = {}) {
@@ -32,6 +33,18 @@ class Contestant {
 
   }
 
+  static async addContender(body) {
+
+    const { name, contestantNumber, bio, imageUrl } =body;
+        const result = await pool.query(
+            `INSERT INTO contestants (name, contestant_number, bio, image_url, id) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [name, contestantNumber, bio, imageUrl, uuidv4()]
+        );
+
+    return result;
+  }
+
   static async findAll() {
     const result = await pool.query(`
       SELECT *, 
@@ -39,7 +52,7 @@ class Contestant {
       FROM contestants
       ORDER BY votes DESC
     `);
-    return result.rows.map(row => new Contestant(row));
+    return result.rows;
   }
 
   static async findById(id) {
@@ -50,7 +63,7 @@ class Contestant {
     return result.rows[0] ? new Contestant(result.rows[0]) : null;
   }
 
-  async addVotes(count) {
+ static async addVotes(count) {
     const result = await pool.query(
       'UPDATE contestants SET votes = votes + $1 WHERE id = $2 RETURNING votes',
       [count, this.id]
@@ -58,6 +71,29 @@ class Contestant {
     this.votes = result.rows[0].votes;
     return this.votes;
   }
+
+ static async deleteContestant(id) {
+    const result = await pool.query(
+      'DELETE FROM contestants WHERE id = $1 RETURNING id',
+      [id]
+    );
+    return result.rowCount
+  }
+
+  static async editContestant(body, id) {
+
+    const { name, contestantNumber, bio, imageUrl } = body;
+
+    const result = await pool.query(
+      `UPDATE contestants 
+             SET name = $1, contestant_number = $2, bio = $3, image_url = $4 
+             WHERE id = $5 RETURNING *`,
+      [name, contestantNumber, bio, imageUrl, id]
+    );
+    return result
+  
+  }
+
 }
 
 module.exports = Contestant;

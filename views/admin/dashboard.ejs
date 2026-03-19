@@ -1,21 +1,23 @@
 <%- include('../partials/navback') %>
-<!-- Admin Dashboard -->
+<!-- Admin Dashboard with Contestant CRUD -->
 
 <main class="container mx-auto px-4 pt-20 pb-16">
 
     <section class="container admin-dashboard">
         <div class="dashboard-header">
-            
             <div class="dashboard-actions">
                 <a href="/chat/admin" class="action-btn inbox-btn">
                     <span class="action-icon">📨</span>
                     <span class="action-text">View Inbox</span>
-                 
                 </a>
                 <a href="/users" class="action-btn users-btn">
                     <span class="action-icon">👥</span>
                     <span class="action-text">Manage Users</span>
                 </a>
+                <button onclick="openAddContestantModal()" class="action-btn add-contestant-btn">
+                    <span class="action-icon">➕</span>
+                    <span class="action-text">Add Contestant</span>
+                </button>
             </div>
         </div>
     
@@ -40,7 +42,7 @@
                 </div>
                 <div class="stat-content">
                     <h3 class="stat-number"><%= stats?.totalMessages || 0 %></h3>
-                    <p class="stat-label">Total application</p>
+                    <p class="stat-label">Total Messages</p>
                 </div>
                 <div class="stat-trend">
                     <span class="trend-up">+25%</span>
@@ -50,13 +52,16 @@
     
             <div class="stat-card">
                 <div class="stat-icon unread-messages">
-                    <span>📩</span>
+                    <span>🗳️</span>
                 </div>
                 <div class="stat-content">
-                    <h3 class="stat-number"><%= stats?.unreadMessages || 0 %></h3>
-                    <p class="stat-label">Total votes</p>
+                    <h3 class="stat-number"><%= stats?.totalVotes || 0 %></h3>
+                    <p class="stat-label">Total Votes</p>
                 </div>
-           
+                <div class="stat-trend">
+                    <span class="trend-up">+15%</span>
+                    <span>this week</span>
+                </div>
             </div>
     
             <div class="stat-card">
@@ -74,9 +79,112 @@
             </div>
         </div>
     
-      
+        <!-- Contestants Management Section -->
+        <div class="dashboard-section contestants-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <span class="section-icon">🎭</span>
+                    Manage Contestants
+                </h3>
+                <button onclick="openAddContestantModal()" class="section-link add-btn">
+                    + Add New
+                </button>
+            </div>
+            <div class="section-content" id="contestants-list">
+                <!-- Contestants will be loaded here -->
+                <div class="loading-spinner">Loading contestants...</div>
+            </div>
+        </div>
     </section>
 </main>
+
+<!-- Add Contestant Modal -->
+<div id="addContestantModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Add New Contestant</h3>
+            <button onclick="closeAddContestantModal()" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="addContestantForm" onsubmit="addContestant(event)">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Enter contestant name">
+                </div>
+                <div class="form-group">
+                    <label for="contestantNumber">Contestant Number</label>
+                    <input type="text" id="contestantNumber" name="contestantNumber" required placeholder="e.g., 001">
+                </div>
+                <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" name="bio" rows="4" required placeholder="Enter contestant biography"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="imageUrl">Image URL</label>
+                    <input type="url" id="imageUrl" name="imageUrl" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAddContestantModal()" class="cancel-btn">Cancel</button>
+                    <button type="submit" class="submit-btn">Add Contestant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Contestant Modal -->
+<div id="editContestantModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Contestant</h3>
+            <button onclick="closeEditContestantModal()" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editContestantForm" onsubmit="editContestant(event)">
+                <input type="hidden" id="editId" name="id">
+                <div class="form-group">
+                    <label for="editName">Name</label>
+                    <input type="text" id="editName" name="name" required placeholder="Enter contestant name">
+                </div>
+                <div class="form-group">
+                    <label for="editContestantNumber">Contestant Number</label>
+                    <input type="text" id="editContestantNumber" name="contestantNumber" required placeholder="e.g., 001">
+                </div>
+                <div class="form-group">
+                    <label for="editBio">Bio</label>
+                    <textarea id="editBio" name="bio" rows="4" required placeholder="Enter contestant biography"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editImageUrl">Image URL</label>
+                    <input type="url" id="editImageUrl" name="imageUrl" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeEditContestantModal()" class="cancel-btn">Cancel</button>
+                    <button type="submit" class="submit-btn">Update Contestant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteContestantModal" class="modal hidden">
+    <div class="modal-content delete-modal">
+        <div class="modal-header delete-header">
+            <h3 class="modal-title">Confirm Delete</h3>
+            <button onclick="closeDeleteContestantModal()" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="delete-message">Are you sure you want to delete this contestant? This action cannot be undone.</p>
+            <p id="deleteContestantName" class="delete-item-name"></p>
+            <input type="hidden" id="deleteId">
+            <div class="modal-actions">
+                <button type="button" onclick="closeDeleteContestantModal()" class="cancel-btn">Cancel</button>
+                <button type="button" onclick="confirmDeleteContestant()" class="delete-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
 /* Admin Dashboard Container */
@@ -119,6 +227,7 @@
 .dashboard-actions {
     display: flex;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
 .action-btn {
@@ -131,6 +240,9 @@
     font-weight: 600;
     transition: all 0.3s ease;
     position: relative;
+    cursor: pointer;
+    border: none;
+    font-size: 0.95rem;
 }
 
 .inbox-btn {
@@ -145,6 +257,12 @@
     border: 1px solid rgba(156, 39, 176, 0.3);
 }
 
+.add-contestant-btn {
+    background: rgba(76, 175, 80, 0.2);
+    color: var(--text-light);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
 .action-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -156,6 +274,10 @@
 
 .users-btn:hover {
     background: rgba(156, 39, 176, 0.35);
+}
+
+.add-contestant-btn:hover {
+    background: rgba(76, 175, 80, 0.35);
 }
 
 .action-icon {
@@ -295,20 +417,8 @@
     color: var(--text-muted);
 }
 
-/* Dashboard Content */
-.dashboard-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-    gap: 30px;
-}
-
-@media (max-width: 1100px) {
-    .dashboard-content {
-        grid-template-columns: 1fr;
-    }
-}
-
-.dashboard-section {
+/* Contestants Section */
+.contestants-section {
     background: rgba(17, 17, 17, 0.2);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
@@ -316,6 +426,7 @@
     border: 1px solid rgba(255, 255, 255, 0.03);
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    margin-top: 30px;
 }
 
 .section-header {
@@ -353,223 +464,345 @@
     text-decoration: underline;
 }
 
+.add-btn {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.add-btn:hover {
+    background: rgba(76, 175, 80, 0.3);
+    text-decoration: none;
+}
+
 .section-content {
     padding: 20px;
-    max-height: 400px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
-/* Messages List */
-.messages-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+/* Contestants Grid */
+.contestants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
 }
 
-.message-item {
-    background: rgba(0, 0, 0, 0.1);
+.contestant-card-admin {
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
-    padding: 15px;
-    display: flex;
-    gap: 15px;
-    transition: all 0.3s;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
 }
 
-.message-item:hover {
-    background: rgba(229, 57, 53, 0.05);
-    transform: translateX(5px);
+.contestant-card-admin:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: rgba(229, 57, 53, 0.3);
 }
 
-.avatar-small {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(229, 57, 53, 0.2), rgba(229, 57, 53, 0.4));
-    border: 2px solid rgba(229, 57, 53, 0.3);
+.contestant-image {
+    height: 150px;
+    background: linear-gradient(135deg, rgba(229, 57, 53, 0.2), rgba(156, 39, 176, 0.2));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+    font-size: 3rem;
+    color: var(--text-muted);
+}
+
+.contestant-info {
+    padding: 15px;
+}
+
+.contestant-name {
+    font-size: 1.1rem;
+    font-weight: 600;
     color: var(--text-light);
-    flex-shrink: 0;
-}
-
-.message-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.message-header {
+    margin: 0 0 5px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
 }
 
-.message-user {
+.contestant-number {
+    font-size: 0.8rem;
+    background: rgba(229, 57, 53, 0.1);
+    color: var(--accent-red);
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.contestant-bio {
+    font-size: 0.9rem;
+    color: rgba(245, 245, 245, 0.7);
+    margin: 10px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.contestant-stats {
+    display: flex;
+    gap: 15px;
+    margin: 10px 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.contestant-votes {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.contestant-rank {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.contestant-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.edit-btn, .delete-btn-sm {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-btn {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.edit-btn:hover {
+    background: rgba(33, 150, 243, 0.3);
+}
+
+.delete-btn-sm {
+    background: rgba(229, 57, 53, 0.2);
+    color: var(--accent-red);
+    border: 1px solid rgba(229, 57, 53, 0.3);
+}
+
+.delete-btn-sm:hover {
+    background: rgba(229, 57, 53, 0.3);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
     font-size: 1rem;
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: rgba(17, 17, 17, 0.95);
+    backdrop-filter: blur(25px);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.3s ease;
+}
+
+.delete-modal {
+    max-width: 400px;
+}
+
+.modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.delete-header {
+    border-bottom-color: rgba(229, 57, 53, 0.3);
+}
+
+.modal-title {
+    font-size: 1.3rem;
     font-weight: 600;
     color: var(--text-light);
     margin: 0;
 }
 
-.message-time {
-    font-size: 0.8rem;
+.close-btn {
+    background: none;
+    border: none;
     color: var(--text-muted);
-    white-space: nowrap;
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1;
 }
 
-.message-preview {
+.close-btn:hover {
+    color: var(--accent-red);
+    transform: scale(1.1);
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-muted);
     font-size: 0.9rem;
-    color: rgba(245, 245, 245, 0.7);
-    margin: 0 0 10px 0;
-    line-height: 1.4;
-}
-
-.message-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.message-status {
-    font-size: 0.75rem;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: 600;
-}
-
-.message-status.unread {
-    background: rgba(229, 57, 53, 0.1);
-    color: var(--accent-red);
-}
-
-.message-status.read {
-    background: rgba(76, 175, 80, 0.1);
-    color: #4CAF50;
-}
-
-.message-action {
-    color: var(--accent-red);
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.message-action:hover {
-    text-decoration: underline;
-}
-
-/* Users List */
-.users-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.user-item {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    padding: 15px;
-    display: flex;
-    gap: 15px;
-    transition: all 0.3s;
-}
-
-.user-item:hover {
-    background: rgba(156, 39, 176, 0.05);
-    transform: translateX(5px);
-}
-
-.user-details {
-    flex: 1;
-}
-
-.user-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-light);
-    margin: 0 0 5px 0;
-}
-
-.user-username {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin: 0 0 10px 0;
-}
-
-.user-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.user-joined {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-.user-role {
-    font-size: 0.75rem;
-    padding: 3px 10px;
-    border-radius: 12px;
     font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.user-role.admin {
-    background: rgba(229, 57, 53, 0.1);
-    color: var(--accent-red);
-}
-
-.user-role.user {
-    background: rgba(33, 150, 243, 0.1);
-    color: #2196F3;
-}
-
-/* Empty States */
-.empty-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    text-align: center;
-}
-
-.empty-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
-    opacity: 0.5;
-    color: var(--text-muted);
-}
-
-.empty-text {
-    color: var(--text-muted);
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-light);
     font-size: 1rem;
+    transition: all 0.3s;
 }
 
-/* Scrollbar Styling */
-.section-content::-webkit-scrollbar {
-    width: 6px;
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent-red);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.2);
 }
 
-.section-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: rgba(245, 245, 245, 0.3);
 }
 
-.section-content::-webkit-scrollbar-thumb {
-    background: rgba(229, 57, 53, 0.3);
-    border-radius: 10px;
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
 }
 
-.section-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(229, 57, 53, 0.5);
+.cancel-btn, .submit-btn, .delete-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.cancel-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, var(--accent-red), #ff4d4d);
+    color: white;
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(229, 57, 53, 0.4);
+}
+
+.delete-btn {
+    background: linear-gradient(135deg, #F44336, #D32F2F);
+    color: white;
+}
+
+.delete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+}
+
+.delete-message {
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.delete-item-name {
+    color: var(--accent-red);
+    font-weight: 600;
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 25px;
+    padding: 10px;
+    background: rgba(229, 57, 53, 0.1);
+    border-radius: 8px;
 }
 
 /* Animations */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @keyframes pulse {
     0%, 100% {
         opacity: 0.7;
@@ -608,7 +841,7 @@
         grid-template-columns: 1fr;
     }
     
-    .dashboard-content {
+    .contestants-grid {
         grid-template-columns: 1fr;
     }
     
@@ -627,38 +860,31 @@
     .section-content {
         padding: 15px;
     }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
 }
 
 @media (max-width: 576px) {
-    .message-item,
-    .user-item {
+    .contestant-actions {
         flex-direction: column;
-        gap: 10px;
     }
     
-    .message-header,
-    .user-meta {
+    .modal-actions {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
-    
-    .message-time {
-        align-self: flex-start;
-    }
-    
-    .avatar-small {
-        align-self: flex-start;
     }
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    loadContestants();
+    
     // Auto-refresh dashboard every 30 seconds
     setInterval(() => {
-        // You can add AJAX refresh here if needed
-        console.log('Dashboard auto-refresh');
+        loadContestants();
     }, 30000);
     
     // Add click animations to stat cards
@@ -672,4 +898,294 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// ============= LOAD CONTESTANTS =============
+async function loadContestants() {
+    const container = document.getElementById('contestants-list');
+    
+    try {
+        const response = await fetch('/admin/contestants');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayContestants(data.contestants);
+        } else {
+            container.innerHTML = '<div class="empty-section"><span class="empty-icon">🎭</span><p class="empty-text">Failed to load contestants</p></div>';
+        }
+    } catch (error) {
+        console.error('Error loading contestants:', error);
+        container.innerHTML = '<div class="empty-section"><span class="empty-icon">🎭</span><p class="empty-text">Error loading contestants</p></div>';
+    }
+}
+
+function displayContestants(contestants) {
+    const container = document.getElementById('contestants-list');
+    
+    if (!contestants || contestants.length === 0) {
+        container.innerHTML = '<div class="empty-section"><span class="empty-icon">🎭</span><p class="empty-text">No contestants found</p></div>';
+        return;
+    }
+    
+    let html = '<div class="contestants-grid">';
+    
+    contestants.forEach(c => {
+        html += `
+            <div class="contestant-card-admin" data-id="${c.id}">
+                <div class="contestant-image">
+                    ${c.image_url ? `<img src="${c.image_url}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;">` : '🎭'}
+                </div>
+                <div class="contestant-info">
+                    <div class="contestant-name">
+                        ${c.name}
+                        <span class="contestant-number">#${c.contestant_number}</span>
+                    </div>
+                    <p class="contestant-bio">${c.bio || 'No bio provided'}</p>
+                    <div class="contestant-stats">
+                        <span class="contestant-votes">🗳️ ${c.votes || 0} votes</span>
+                        <span class="contestant-rank">📊 Rank #${c.rank || 'N/A'}</span>
+                    </div>
+                    <div class="contestant-actions">
+                        <button onclick="openEditContestantModal('${c.id}')" class="edit-btn">Edit</button>
+                        <button onclick="openDeleteContestantModal('${c.id}', '${c.name}')" class="delete-btn-sm">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ============= ADD CONTESTANT MODAL =============
+function openAddContestantModal() {
+    document.getElementById('addContestantModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAddContestantModal() {
+    document.getElementById('addContestantModal').classList.remove('show');
+    document.getElementById('addContestantForm').reset();
+    document.body.style.overflow = '';
+}
+
+async function addContestant(event) {
+    event.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('name').value,
+        contestantNumber: document.getElementById('contestantNumber').value,
+        bio: document.getElementById('bio').value,
+        imageUrl: document.getElementById('imageUrl').value
+    };
+    
+    const submitBtn = event.target.querySelector('.submit-btn');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+    
+    try {
+        const response = await fetch('/admin/contestants', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            closeAddContestantModal();
+            loadContestants();
+            showNotification('Contestant added successfully!', 'success');
+        } else {
+            showNotification(data.error || 'Failed to add contestant', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding contestant:', error);
+        showNotification('Error adding contestant', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// ============= EDIT CONTESTANT MODAL =============
+async function openEditContestantModal(contestantId) {
+    try {
+        const response = await fetch(`/admin/contestants/${contestantId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const c = data.contestant;
+            document.getElementById('editId').value = c.id;
+            document.getElementById('editName').value = c.name;
+            document.getElementById('editContestantNumber').value = c.contestant_number;
+            document.getElementById('editBio').value = c.bio || '';
+            document.getElementById('editImageUrl').value = c.image_url || '';
+            
+            document.getElementById('editContestantModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        } else {
+            showNotification('Failed to load contestant details', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading contestant:', error);
+        showNotification('Error loading contestant', 'error');
+    }
+}
+
+function closeEditContestantModal() {
+    document.getElementById('editContestantModal').classList.remove('show');
+    document.getElementById('editContestantForm').reset();
+    document.body.style.overflow = '';
+}
+
+async function editContestant(event) {
+    event.preventDefault();
+    
+    const contestantId = document.getElementById('editId').value;
+    const formData = {
+        name: document.getElementById('editName').value,
+        contestantNumber: document.getElementById('editContestantNumber').value,
+        bio: document.getElementById('editBio').value,
+        imageUrl: document.getElementById('editImageUrl').value
+    };
+    
+    const submitBtn = event.target.querySelector('.submit-btn');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Updating...';
+    
+    try {
+        const response = await fetch(`/admin/contestants/${contestantId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            closeEditContestantModal();
+            loadContestants();
+            showNotification('Contestant updated successfully!', 'success');
+        } else {
+            showNotification(data.error || 'Failed to update contestant', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating contestant:', error);
+        showNotification('Error updating contestant', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// ============= DELETE CONTESTANT MODAL =============
+function openDeleteContestantModal(contestantId, contestantName) {
+    document.getElementById('deleteId').value = contestantId;
+    document.getElementById('deleteContestantName').textContent = contestantName;
+    document.getElementById('deleteContestantModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteContestantModal() {
+    document.getElementById('deleteContestantModal').classList.remove('show');
+    document.getElementById('deleteId').value = '';
+    document.getElementById('deleteContestantName').textContent = '';
+    document.body.style.overflow = '';
+}
+
+async function confirmDeleteContestant() {
+    const contestantId = document.getElementById('deleteId').value;
+    
+    const deleteBtn = document.querySelector('#deleteContestantModal .delete-btn');
+    const originalText = deleteBtn.textContent;
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Deleting...';
+    
+    try {
+        const response = await fetch(`/admin/contestants/${contestantId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            closeDeleteContestantModal();
+            loadContestants();
+            showNotification('Contestant deleted successfully!', 'success');
+        } else {
+            showNotification(data.error || 'Failed to delete contestant', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting contestant:', error);
+        showNotification('Error deleting contestant', 'error');
+    } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = originalText;
+    }
+}
+
+// ============= NOTIFICATION =============
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    Object.assign(notification.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '15px 25px',
+        borderRadius: '8px',
+        color: '#fff',
+        fontSize: '14px',
+        fontWeight: '500',
+        zIndex: '1100',
+        animation: 'slideIn 0.3s ease'
+    });
+    
+    if (type === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+    } else if (type === 'error') {
+        notification.style.background = 'linear-gradient(135deg, #F44336, #D32F2F)';
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #2196F3, #1976D2)';
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated, ensureAdmin } = require("../config/auth");
-const pool = require('../config/db');
 
 // This will be initialized with socketService from app.locals
 let ticketController;
