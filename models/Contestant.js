@@ -63,7 +63,7 @@ class Contestant {
     return result.rows[0] ? new Contestant(result.rows[0]) : null;
   }
 
- static async addVotes(count) {
+  async addVotes(count) {
     const result = await pool.query(
       'UPDATE contestants SET votes = votes + $1 WHERE id = $2 RETURNING votes',
       [count, this.id]
