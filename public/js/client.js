@@ -284,27 +284,7 @@ async function checkWalletBalance() {
     }
 }
 
-// Notification system
-function showNotification(message, type = 'info') {
-    const existing = document.querySelector('.vote-notification');
-    if (existing) existing.remove();
-    
-    const notification = document.createElement('div');
-    notification.className = `vote-notification fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50 animate-slide-up ${
-        type === 'success' ? 'bg-green-100 border border-green-200 text-green-800' :
-        type === 'error' ? 'bg-red-100 border border-red-200 text-red-800' :
-        'bg-blue-100 border border-blue-200 text-blue-800'
-    }`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
+
 
 // Make functions global
 window.adjustVote = adjustVote;
@@ -325,3 +305,4 @@ if (!document.getElementById('vote-styles')) {
     `;
     document.head.appendChild(style);
 }
+

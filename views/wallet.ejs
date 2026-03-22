@@ -161,7 +161,9 @@ if (userId) {
 
     socket.on('wallet_update', async(data) => {
     await refreshBalance();
+   
      showNotification(`You just got coins from ${data.message}`, 'success');
+
     });
 
 // Refresh refreshBalance via API
@@ -179,6 +181,7 @@ async function refreshBalance() {
         }
     } catch (error) {
         console.error('Failed to refresh coin balance:', error);
+        
         showNotification('error from us', 'error');
         return;
     }
@@ -199,7 +202,13 @@ function showPaymentStatus(message, type = 'info') {
     }`;
     statusDiv.textContent = message;
     statusDiv.classList.remove('hidden');
-    
+
+     if (type === 'info') {
+        playOptionSound(options[1])
+    }else{
+        playOptionSound(options[2])
+
+    }
     // Auto hide after 5 seconds
     setTimeout(() => {
         statusDiv.classList.add('hidden');
@@ -239,10 +248,15 @@ async function fundWallet(amount) {
             // Redirect to Paystack payment page
             window.location.href = data.authorization_url;
         } else {
+           
             showPaymentStatus(data.error || 'Payment initialization failed', 'error');
+            
+            
         }
     } catch (error) {
         console.error('Payment error:', error);
+        
+
         showPaymentStatus('Failed to initialize payment. Please try again.', 'error');
     } finally {
         // Re-enable buttons
@@ -258,11 +272,13 @@ async function transferCoins() {
     const amount = document.getElementById('transfer-amount').value;
     
     if (!receiverWallet || !amount) {
+       
         showNotification('Please fill all fields', 'error');
         return;
     }
     
     if (amount < 10) {
+        
         showNotification('Minimum transfer is 10 coins', 'error');
         return;
     }
@@ -318,22 +334,7 @@ async function transferCoins() {
 
 
 // Add notification function
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-20 right-4 max-w-md p-4 rounded-lg shadow-lg z-50 animate-slide-up ${
-        type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
-        type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
-        'bg-blue-100 text-blue-800 border border-blue-200'
-    }`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, 4000);
-}
+
 
 
 // Check URL parameters for payment status
@@ -354,3 +355,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<script src="/js/notify.js"></script>
