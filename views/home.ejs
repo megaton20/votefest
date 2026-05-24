@@ -81,9 +81,9 @@
             <div class="contestant-card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                  data-contestant-id="<%= contestant.id %>">
                 <div class="relative">
-                    <div class="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
-                        <img src="/img/bg-dark.png" alt="">
-                        <!-- <img src="/img/<%= contestant.image_url %>" alt=""> -->
+                    <div class="w-full h-49 bg-gray-200 flex items-center justify-center overflow-hidden">
+                        <!-- <img src="/img/bg-dark.png" alt=""> -->
+                        <img src="/img/c/<%= contestant.image_url || 'default.jpg' %>" alt="">
                     </div>
 
                     <div class="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm">

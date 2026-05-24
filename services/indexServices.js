@@ -28,7 +28,6 @@ class indexServices {
       let user = null;
 
       const contestant = await Contestant.findById(id);
-
       
       if (!contestant || contestant == null) {
         return { user,success:false, message: 'Contestant not found' };

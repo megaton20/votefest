@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Real-time vote updates from server
 socket.on('vote_update', (data) => {
-    console.log('📊 Vote update received:', data);
+    // console.log('Vote update received:');
     const { contestantId, newVotes } = data;
     
     // Update vote count elements
@@ -105,9 +105,9 @@ socket.on('wallet_update', (data) => {
     checkWalletBalance();
 });
 
-// Also listen for leaderboard updates from server
+// listening for leaderboard updates from server
 socket.on('leaderboard_update', (leaderboard) => {
-    console.log(' Leaderboard update received');
+    // console.log(' Leaderboard update received');
     if (leaderboard && leaderboard.length) {
         updateLeaderboardDisplay(leaderboard);
         updateTotalVotes(leaderboard);
